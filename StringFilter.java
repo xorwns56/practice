@@ -29,17 +29,17 @@ public class Solution {
 			if(isHyphenExist) result.remove(s);
 			
 			/*
-			 Á¤±Ô½Ä Ç¥Çö »ç¿ë ½Ã
+			 ì •ê·œì‹ í‘œí˜„ ì‚¬ìš© ì‹œ
 			if(s.matches("^[a-zA-Z]+$")) result2.add(s);
 			if(s.matches("^[1-9]+$")) result3.add(s);
 			if(s.matches("^.*[-]+.*$")) result.remove(s);
 			*/
 		}
-		System.out.print("ÇÏÀÌÇÂÀÌ ¾ø´Â : ");
+		System.out.print("í•˜ì´í”ˆì´ ì—†ëŠ” : ");
 		printList(result);
-		System.out.print("¸ğµÎ ¾ËÆÄºª : ");
+		System.out.print("ëª¨ë‘ ì•ŒíŒŒë²³ : ");
 		printList(result2);
-		System.out.print("¸ğµÎ ¼ıÀÚ : ");
+		System.out.print("ëª¨ë‘ ìˆ«ì : ");
 		printList(result3);
 		
 	}
