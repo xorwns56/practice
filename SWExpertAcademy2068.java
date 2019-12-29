@@ -8,12 +8,12 @@ class Solution
 		int T = sc.nextInt();
 		for(int i=0; i<T; i++)
 		{
-            int max = sc.nextInt();
-            for(int x=0;x<9;x++){
-                int input = sc.nextInt();
-                if(max<input) max = input;
-            }
-            System.out.println("#"+(i+1)+" "+max);
+            		int max = sc.nextInt();
+            		for(int x=0;x<9;x++){
+                		int input = sc.nextInt();
+                		if(max<input) max = input;
+           		 }
+            		System.out.println("#"+(i+1)+" "+max);
 		}
 	}
 }
