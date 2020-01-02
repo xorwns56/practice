@@ -8,12 +8,12 @@ class Solution
 		int T = sc.nextInt();
 		for(int i=0; i<T; i++)
 		{
-            int sum = 0;
-            for(int x=0;x<10;x++){
-                sum += sc.nextInt();
-            }
-            int avg = (int)(sum/10.0 + 0.5);
-            System.out.println("#"+(i+1)+" "+avg);
+		    int sum = 0;
+		    for(int x=0;x<10;x++){
+			sum += sc.nextInt();
+		    }
+		    int avg = (int)(sum/10.0 + 0.5);
+		    System.out.println("#"+(i+1)+" "+avg);
 		}
 	}
 }
