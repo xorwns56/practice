@@ -8,14 +8,13 @@ class Solution
 		int T = sc.nextInt();
 		for(int i=0; i<T; i++)
 		{
-            String input = sc.next();
-            String year = input.substring(0, 4);
-		    String month = input.substring(4, 6);
-            String day = input.substring(6, 8);
-		    
-		    System.out.print("#"+(i+1)+" ");
-            if(isCorrectMonth(month)&&isCorrectDay(month,day)) System.out.println(year + "/" + month + "/" + day);
-            else System.out.println(-1);
+		    String input = sc.next();
+		    String year = input.substring(0, 4);
+			String month = input.substring(4, 6);
+			String day = input.substring(6, 8);
+			System.out.print("#"+(i+1)+" ");
+		    if(isCorrectMonth(month)&&isCorrectDay(month,day)) System.out.println(year + "/" + month + "/" + day);
+		    else System.out.println(-1);
 		}
 	}
     
