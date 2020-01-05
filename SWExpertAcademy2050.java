@@ -1,5 +1,4 @@
 import java.util.Scanner;
-import java.io.FileInputStream;
 
 class Solution
 {
