@@ -10,9 +10,9 @@ class Solution
         
 		for(int test_case = 1; test_case <= T; test_case++)
 		{
-            int a = sc.nextInt();
-            int b = sc.nextInt();
-            System.out.println("#" + test_case + " "+ (a/b) + " "+(a%b));
+            		int a = sc.nextInt();
+            		int b = sc.nextInt();
+            		System.out.println("#" + test_case + " "+ (a/b) + " "+(a%b));
 		}
 	}
 }
