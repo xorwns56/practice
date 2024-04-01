@@ -1,6 +1,5 @@
 class Solution {
     public int solution(int[] arrayA, int[] arrayB) {
-        //arrayA에 있는 모든 숫자를 나눌수 있고, arrayB에 있는 모든 숫자를 하나도 나눌수없음
         int gcdA = arrayA[0];
         int gcdB = arrayB[0];
         for(int i = 1; i < arrayA.length; i++) gcdA = gcd(gcdA, arrayA[i]);
