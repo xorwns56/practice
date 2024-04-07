@@ -1,7 +1,6 @@
 class Solution {
     public int solution(int[][] triangle) {
-        int[][] sum = new int[triangle.length][triangle.length];
-        return visit(triangle, sum, 0, 0);
+        return visit(triangle, new int[triangle.length][triangle.length], 0, 0);
     }
     public int visit(int[][] triangle, int[][] sum, int level, int index){
         if(level == triangle.length) return 0;
