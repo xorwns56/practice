@@ -4,14 +4,10 @@ class Solution {
         while(storey > 0) {
             int num = storey % 10;
             storey /= 10;
-            if (num > 5) {
+            if (num >= 5) {
                 answer += 10 - num;
-                storey++;
+                if(num > 5 || storey % 10 >= 5) storey++;
             }else if (num < 5) answer += num;
-            else if (storey % 10 >= 5) {
-                answer += 5;
-                storey++;
-            }else answer += 5;
         }
         return answer;
     }
