@@ -26,7 +26,6 @@ class Solution {
             visited[i] = false;
         }
     }
-    
     public boolean isPrimeNumber(int number){
         if(number <= 1) return false;
         for(int i = 2; i <= (int)Math.sqrt(number); i++){
