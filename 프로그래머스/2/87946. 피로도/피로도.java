@@ -1,4 +1,3 @@
-import java.util.*;
 class Solution {
     int answer = 0;
     public int solution(int k, int[][] dungeons) {
