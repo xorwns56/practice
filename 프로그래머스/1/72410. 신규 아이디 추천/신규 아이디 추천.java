@@ -8,9 +8,7 @@ class Solution {
         if(answer.isEmpty()) answer = "a";
         if(answer.length() >= 16) answer = answer.substring(0, 15);
         if(answer.endsWith(".")) answer = answer.substring(0, 14);
-        if(answer.length() <= 2){
-            while(answer.length() < 3) answer += answer.charAt(answer.length() - 1);
-        }
+        if(answer.length() <= 2) while(answer.length() < 3) answer += answer.charAt(answer.length() - 1);
         return answer;
     }
 }
