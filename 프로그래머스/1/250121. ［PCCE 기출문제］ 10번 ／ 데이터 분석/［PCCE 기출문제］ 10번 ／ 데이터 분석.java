@@ -9,12 +9,8 @@ class Solution {
         List<int[]> filtered_list = new ArrayList<>();
         int ext_idx = map.get(ext);
         int sort_by_idx = map.get(sort_by);
-        for(int i = 0; i < data.length; i++){
-            if(data[i][ext_idx] < val_ext) filtered_list.add(data[i]);
-        }
-        Collections.sort(filtered_list, (a, b)->{
-            return a[sort_by_idx] - b[sort_by_idx];
-        });
+        for(int i = 0; i < data.length; i++) if(data[i][ext_idx] < val_ext) filtered_list.add(data[i]);
+        Collections.sort(filtered_list, (a, b)->{ return a[sort_by_idx] - b[sort_by_idx]; });
         return filtered_list.toArray(new int[0][]);
     }
 }
