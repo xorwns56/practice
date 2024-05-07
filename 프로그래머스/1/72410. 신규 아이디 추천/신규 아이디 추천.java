@@ -1,7 +1,6 @@
 class Solution {
     public String solution(String new_id) {
-        String answer = new_id;
-        answer = answer.toLowerCase();
+        String answer = new_id.toLowerCase();
         answer = answer.replaceAll("[^a-z0-9-_.]","");
         answer = answer.replaceAll("\\.{2,}",".");
         answer = answer.replaceAll("^\\.|\\.$", "");
