@@ -8,11 +8,9 @@ class Solution {
         }
         return answer;
     }
-    
     public boolean mine(int[][] board, int x, int y){
         return 0 <= x && x < board.length && 0 <= y && y < board[x].length && board[x][y] == 1;
     }
-    
     public boolean danger(int[][] board, int x, int y){
         for(int i = -1; i <= 1; i++){
             for(int j = -1; j <= 1; j++){
