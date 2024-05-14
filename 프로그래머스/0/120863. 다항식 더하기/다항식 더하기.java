@@ -14,6 +14,5 @@ class Solution {
         if(x > 0 && n > 0) answer += " + ";
         if(n > 0) answer += n;
         return answer;
-        
     }
 }
