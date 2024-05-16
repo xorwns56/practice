@@ -9,7 +9,6 @@ class Solution {
         }
         return answer;
     }
-    
     public boolean three(int n){
         if(n % 3 == 0) return true;
         while(n > 0){
