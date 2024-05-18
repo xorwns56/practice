@@ -1,4 +1,3 @@
-import java.util.*;
 class Solution {
     char[] aeiou = new char[] { 'A', 'E', 'I', 'O', 'U' };
     int count = 0;
