@@ -1,5 +1,4 @@
 import java.util.*;
-
 class Process{
     int priority;
     boolean answer;
