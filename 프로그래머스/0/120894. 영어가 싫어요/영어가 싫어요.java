@@ -1,5 +1,4 @@
 import java.util.*;
-
 class Solution {
     public long solution(String numbers) {
         HashMap<String, Integer> map = new HashMap<>();
