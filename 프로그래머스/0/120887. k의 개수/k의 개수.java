@@ -1,5 +1,4 @@
 import java.util.*;
-import java.util.stream.IntStream;
 class Solution {
     public int solution(int i, int j, int k) {
         int answer = 0;
