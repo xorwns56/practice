@@ -1,4 +1,3 @@
-import java.util.*;
 class Solution {
     public int[] solution(int[][] score) {
         int[] answer = new int[score.length];
