@@ -325,7 +325,7 @@ public class Phase {
 
             double frame_sec = 0.02;
             //System.out.println(frame_sec);
-            double win_sec = 0.16;
+            double win_sec = 0.1;
             int frame_len = (int)(sampleRate * frame_sec);
             
             /*
@@ -350,8 +350,8 @@ public class Phase {
             System.out.println(pcmBytesArray.length);
 
             
-            
-            double ffreq = 128;
+
+            double ffreq = 128.12;
             double ffreq2 = ffreq + sampleRate / 32768;
             System.out.println((frame_sec * 2 * Math.PI * ffreq) / Math.PI * 180 % 360);
             System.out.println((frame_sec * 2 * Math.PI * ffreq2) / Math.PI * 180 % 360);
@@ -389,10 +389,11 @@ public class Phase {
             }
             */
 
-            
+            /*
             smp.flush();
             smp.close();
             pcmToWav((int)sampleRate, 1, 16, pcmBytesArray, "output.wav");
+            */
             
             
             double[] win = new double[(int)(sampleRate * win_sec)];
@@ -421,7 +422,7 @@ public class Phase {
             while(n_fft < win.length) n_fft <<= 1;
 			//while(n_fft < win.length || A0 * (Math.pow(2, (keyStart - 0.5 + 1. / mel_compression) / 12) - Math.pow(2, (keyStart - 0.5) / 12)) < sampleRate / n_fft) n_fft <<= 1;
             
-            n_fft = 32768;
+            n_fft = 16384;
             
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
@@ -470,6 +471,7 @@ public class Phase {
             ArrayList<double[]> dbfs2_list = new ArrayList<>();
             ArrayList<int[]> freq_list = new ArrayList<>();
             ArrayList<double[]> angle_list = new ArrayList<>();
+            ArrayList<boolean[]> valid_list = new ArrayList<>();
             
             int frame = 0;//임시
             
@@ -480,11 +482,13 @@ public class Phase {
             
             double mag_max = 0;
 
+            /*
             double a = Math.atan2(2, 2);
             double b = Math.atan2(-2, -2);
             
             double a1 = (a < 0 ? a + Math.PI * 2 : a) / Math.PI * 180;
             double b1 = (b < 0 ? b + Math.PI * 2 : b) / Math.PI * 180;
+            */
             
             /*
             System.out.println(a1);
@@ -507,7 +511,16 @@ public class Phase {
             
             List<List<Mel>> mel_frames = new ArrayList<>();
             
-            double[] prev_phase = new double[mel_range2.length];
+            double[] prev_phase = new double[n_fft / 2];
+            
+            double m = 0;
+            
+            double range1 = 5;
+            double range2 = 1;
+            
+            double x = 6;
+            
+            System.out.println((x - range1) / (range2 - range1));
             
             while((bufferSize = fis.read(buffer, 0, buffer.length)) != -1) {
             	for(int i = 0; i < bufferSize / div; i++) {
@@ -519,7 +532,7 @@ public class Phase {
                     	
                     	
                     	Complex[] complex = new Complex[n_fft];
-    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(win[j]) : 0, 0);
+    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * win[j] : 0, 0);
     					complex = fft.transform(complex, TransformType.FORWARD);
 
     					double rms = 0;
@@ -529,20 +542,64 @@ public class Phase {
     					
     					double[] mag = new double[n_fft / 2];
     					double[] angle = new double[n_fft / 2];
-    					double[] angle2 = new double[n_fft / 2];
+    					double[] phase = new double[n_fft / 2];
+    					boolean[] valid = new boolean[n_fft / 2];
     					for(int j = 0; j < mag.length; j++) {
-    						double phase = Math.atan2(complex[j].getImaginary(), complex[j].getReal());
     						mag[j] = complex[j].abs();
     						if(mag_max < mag[j]) mag_max = mag[j];
-    						angle[j] = (phase < 0 ? phase + Math.PI * 2 : phase) / Math.PI * 180;
+    						phase[j] = Math.atan2(complex[j].getImaginary(), complex[j].getReal());
+    						if(phase[j] < 0) phase[j] += Math.PI * 2;
     						
-    						//System.out.println()
     						
-    						angle2[j] = 1;
+    						double next_phase1 = (prev_phase[j] + frame_sec * 2 * Math.PI * (j + 0.) * bin_Hz) % (2 * Math.PI);
+    						double next_phase2 = (prev_phase[j] + frame_sec * 2 * Math.PI * (j + 1.) * bin_Hz) % (2 * Math.PI);
+    						
+    						double a = (phase[j] - next_phase1) / (next_phase2 - next_phase1);
+    						
+    						double frqe = (j + a) * bin_Hz;
+    						
+    						if(j == (int)(ffreq / bin_Hz)) System.out.println(phase[j] - prev_phase[j] + ", " + next_phase1 + ", " + next_phase2);//System.out.println(frqe + ", " + (next_phase1 < next_phase2));
+    						
+    						/*
+    						if(next_phase1 > next_phase2) {
+    							double tmp = next_phase1;
+    							next_phase1 = next_phase2;
+    							next_phase2 = tmp;
+    						}
+    						*/
+    						
+    						if(0 < j - 1 && j + 1 < mag.length && complex[j].abs() > Math.max(complex[j - 1].abs(), complex[j + 1].abs())) {
+    							valid[j] = true;
+    						}
+    						
+    						
+    						angle[j] = phase[j] / Math.PI * 180;
+    						
+    						//valid[j] = next_phase1 < phase[j] && phase[j] < next_phase2;
+    						/*
+    						double angle_diff = angle[j] - prev_angle[j];
+    						if(angle_diff < 0) angle_diff += 360;
+    						
+    						
+    						//System.out.println(angle_diff / (2 * Math.PI * frame_sec));
+    						
+    						if(m < angle_diff) m = angle_diff;
+    						//if(m < angle_diff / (2 * Math.PI * frame_sec)) m = angle_diff / (2 * Math.PI * frame_sec);
+    						
+    						double angle1 = (frame_sec * 2 * Math.PI * (j + 0.) * bin_Hz) / Math.PI * 180 % 360;
+    						double angle2 = (frame_sec * 2 * Math.PI * (j + 1.) * bin_Hz) / Math.PI * 180 % 360;
+    						
+    						valid[j] = angle1 <= angle_diff && angle_diff <= angle2;
+    						*/
     					}
     					
-    					dbfs_list.add(mag);
-    					angle_list.add(angle);
+    					
+    					
+    					prev_phase = phase;
+    					
+    					valid_list.add(valid);
+    					//dbfs_list.add(mag);
+    					//angle_list.add(angle);
     					
     					//System.out.println((frame_sec * 2 * Math.PI * 77.) / Math.PI * 180 % 360);
     					
@@ -597,7 +654,7 @@ public class Phase {
             	}
             }
             System.out.println(System.currentTimeMillis() - stamp);
-            
+            System.out.println(m);
             
             /*
             BufferedImage dbfs = new BufferedImage(dbfs_list.size(), dbfs_list.get(0).length, BufferedImage.TYPE_INT_RGB);
@@ -618,7 +675,16 @@ public class Phase {
             ImageIO.write(dbfs, "PNG", new File("output_dbfs.png"));//
             */
             
+            BufferedImage valid = new BufferedImage(valid_list.size(), valid_list.get(0).length, BufferedImage.TYPE_INT_RGB);
+            for(int i = 0; i < valid_list.size(); i++) {
+            	boolean[] v = valid_list.get(i);
+            	for(int j = 0; j < v.length; j++) {
+            		if(v[j]) valid.setRGB(i, valid_list.get(0).length - 1 - j, 0xFFFFFFFF);
+            	}
+            }
+            ImageIO.write(valid, "PNG", new File("output_valid.png"));//
             
+            /*
             BufferedImage dbfs = new BufferedImage(dbfs_list.size(), dbfs_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < dbfs_list.size(); i++) {
             	double[] mag = dbfs_list.get(i);
@@ -635,7 +701,7 @@ public class Phase {
             	
             	//List<Mel> mels = new ArrayList<>();
             	
-            	int freq_index = (int)(ffreq / bin_Hz);
+            	int freq_index = (int)(128 / bin_Hz);
             	//System.out.println(freq_index);
             	
 
@@ -649,6 +715,7 @@ public class Phase {
             	//mel_frames.add(mels);
             }
             ImageIO.write(angle, "PNG", new File("output_angle.png"));//
+            */
             
             
             //byte[] pcmBytesArray = mel_to_pcm((int)sampleRate, frame_sec, mel_frames);
