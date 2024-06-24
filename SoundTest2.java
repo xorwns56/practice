@@ -429,7 +429,7 @@ public class SoundTest2 {
             */
             
 
-            FileInputStream fis = new FileInputStream(new File("sample/sample10.pcm"));
+            FileInputStream fis = new FileInputStream(new File("sample/drum.pcm"));
             
             ArrayList<double[]> mag_list = new ArrayList<>();
             ArrayList<double[]> phase_list = new ArrayList<>();
@@ -521,7 +521,11 @@ public class SoundTest2 {
     					*/
 
     					double[] mag = new double[n_fft / 2];
-    					for(int j = 0; j < mag.length; j++) mag[j] = complex[j].abs();
+    					double max = 0;
+    					for(int j = 0; j < mag.length; j++) {
+    						mag[j] = complex[j].abs();
+    						if(max < mag[j]) max = mag[j];
+    					}
 
     					double[] value = mag;
     					ArrayList<Peak> peaks = new ArrayList<>();
@@ -545,7 +549,7 @@ public class SoundTest2 {
 								//double value = Math.max(0, 20 * Math.log10(scal[peak[0]]) + dbNorm) / dbNorm;
 								//if(valid[peak[0]])
 								//if(end - start + 1 > mel_px)
-								peaks.add(new Peak(frame, start, peak, end, value[peak[0]]));
+								if(value[peak[0]] > max * 0.1) peaks.add(new Peak(frame, start, peak, end, value[peak[0]]));
 								//sum += value;
 								//if(comp_max < value) comp_max = value;
 							}
@@ -573,10 +577,10 @@ public class SoundTest2 {
                         System.arraycopy(sampleBuffer, frame_len, sampleBuffer, 0, sampleOffset);
                         frame++;
                         
-                        //if(frame == 30) bb = true;
+                        if(frame == 1000) bb = true;
                     }
             	}
-            	//if(bb) break;
+            	if(bb) break;
             }
             System.out.println(System.currentTimeMillis() - stamp);
             
