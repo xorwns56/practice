@@ -340,7 +340,7 @@ public class SoundTest2 {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			int sampleRateOrigin = 48000;
+			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
             double frame_sec = 0.02;
@@ -373,7 +373,7 @@ public class SoundTest2 {
             while(n_fft < win.length) n_fft <<= 1;
 			//while(n_fft < win.length || A0 * (Math.pow(2, (keyStart - 0.5 + 1. / mel_compression) / 12) - Math.pow(2, (keyStart - 0.5) / 12)) < sampleRate / n_fft) n_fft <<= 1;
             
-            n_fft = 1024;
+            n_fft = 2048;
             
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
@@ -444,7 +444,7 @@ public class SoundTest2 {
             
             
 
-            int mel_comp = 10;
+            int mel_comp = 1;
             int[][] mel_range = new int[(int)Math.round(12 * Math.log(sampleRate * 0.5 / A0) / Math.log(2) * mel_comp)][2];
             for(int i = 0; i < n_fft / 2; i++) {
             	int key = (int)Math.round(Math.max(-1, 12 * Math.log((double)i * sampleRate / n_fft / A0) / Math.log(2)) * mel_comp);
@@ -490,12 +490,13 @@ public class SoundTest2 {
             */
             
 
-            FileInputStream fis = new FileInputStream(new File("sample/sample2.pcm"));
+            FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
             
             ArrayList<double[]> mag_list = new ArrayList<>();
             ArrayList<double[]> phase_list = new ArrayList<>();
             ArrayList<double[]> freq_list = new ArrayList<>();
             ArrayList<Complex[]> complex_list = new ArrayList<>();
+            ArrayList<int[]> max_list = new ArrayList<>();
             
             int frame = 0;//임시
             
@@ -556,6 +557,9 @@ public class SoundTest2 {
     					double[] real_mag = new double[mag.length];
     					double[] freq = new double[mag.length];
     					double[] phase = new double[mag.length];
+    					
+    					
+    					
     					//val[0] = complex[0].abs();
     					//val[n_fft / 2] = complex[n_fft / 2].abs();
     					//rms2 += val[0] * val[0];
@@ -568,14 +572,24 @@ public class SoundTest2 {
     					}
     					rms2 = Math.sqrt(rms2 / (n_fft / 2));
     					System.out.println(rms + ", " + rms2);
-    					for(int j = 0; j < mag.length; j++) {
-    						if(mag[j] < rms2) {
-    							//real_mag[j] = 0;
-    						}
-    					}
-    					mag_list.add(real_mag);
+    					
+    					for(int j = 0; j < mag.length; j++) if(mag_max < mag[j]) mag_max = mag[j];
+    					mag_list.add(mag);
+    					
+    					//for(int j = 0; j < mag.length; j++) if(mag_max < real_mag[j]) mag_max = real_mag[j];
+    					//mag_list.add(real_mag);
+    					
+    					
     					freq_list.add(freq);
     					phase_list.add(phase);
+    					
+    					
+    					
+    					int[] max_mel = new int[mel_range.length];
+    					for(int j = 0; j < mel_range.length; j++) {
+    						for(int k = mel_range[j][0]; k <= mel_range[j][1]; k++) if(max_mel[j] == 0 || mag[max_mel[j]] < mag[k]) max_mel[j] = k;
+    					}
+    					max_list.add(max_mel);
 
 
 
@@ -633,13 +647,16 @@ public class SoundTest2 {
     						if(phase[j] < 0) phase[j] += 2 * Math.PI;
     						
     						
+    						//if(mag_max < mel[j]) mag_max = mel[j];
+    						
     						if(mag_max < eq_mel[j]) mag_max = eq_mel[j];
     					}
     					mag_list.add(eq_mel);
+    					//mag_list.add(mel);
     					phase_list.add(phase);
     					freq_list.add(freq);
     					*/
-
+  
     					
     					
     					/*
@@ -747,9 +764,32 @@ public class SoundTest2 {
             
             BufferedImage dbfs = new BufferedImage(mag_list.size(), mag_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < mag_list.size(); i++) {
-            	double[] mel = mag_list.get(i);
-            	for(int j = 1; j < mel.length - 1; j++) {
-            		int col = (int)(mel[j] / mag_max * 0xFF);
+            	double[] mag = mag_list.get(i);
+            	
+            	if(i == 322) {
+            		int[] max_mel = max_list.get(i);
+            		
+            		BufferedImage im = new BufferedImage(mag.length, 500, BufferedImage.TYPE_INT_RGB);
+            		double max = 0;
+            		for(int j = 0; j < mag.length; j++) if(max < mag[j]) max = mag[j];
+            		
+            		for(int j = 0; j < mag.length; j++) {
+            			int height = (int)(mag[j] / max * (im.getHeight() - 1));
+            			for(int k = 0; k <= height; k++) im.setRGB(j, (im.getHeight() - 1) - k, 0xFFFFFFFF);
+            		}
+            		
+            		for(int j = 0; j < max_mel.length; j++) {
+            			int max_idx = max_mel[j];
+            			int height = (int)(mag[max_idx] / max * (im.getHeight() - 1));
+            			for(int k = 0; k <= height; k++) im.setRGB(max_idx, (im.getHeight() - 1) - k, 0xFFFF0000);
+            		}
+            		
+            		ImageIO.write(im, "PNG", new File("output_im" + n_fft  + ".png"));//
+            	}
+            	
+            	
+            	for(int j = 1; j < mag.length - 1; j++) {
+            		int col = (int)(mag[j] / mag_max * 0xFF);
             		dbfs.setRGB(i, mag_list.get(0).length - 1 - j, (col << 24 | col << 16 | col << 8 | col));
             		//if(mel[j] > Math.max(mel[j - 1], mel[j + 1])) dbfs.setRGB(i, mag_list.get(0).length - 1 - j, 0xFFFF0000);
             	}
