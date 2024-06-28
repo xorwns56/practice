@@ -52,6 +52,85 @@ public class SoundTest2 {
 		public double value;
 	}
 	
+	public static class Sobel {
+		ArrayList<double[]> x_h;
+		ArrayList<double[]> y_h;
+		ArrayList<double[][]> rslt_list;
+		ArrayList<double[][]> gradient_tmp;
+		public void Add(int frame, double[] value, boolean last) {
+			if(frame == 0) {
+				x_h = new ArrayList<>();
+				y_h = new ArrayList<>();
+				rslt_list = new ArrayList<>();
+				gradient_tmp = new ArrayList<>();
+			}
+			double[] x_v = new double[value.length];
+			double[] y_v = new double[value.length];
+			for(int i = 0; i < value.length; i++) {
+				x_v[i] = value[Math.min(value.length - 1, i + 1)] - value[Math.max(0, i - 1)];
+				y_v[i] = value[Math.max(0, i - 1)] + value[i] * 2 + value[Math.min(value.length - 1, i + 1)];
+			}
+			for(int i = frame + (frame == 0 ? -1 : 0); i <= frame + (last ? 1 : 0); i++) {
+				x_h.add(x_v);
+				y_h.add(y_v);
+				if(i < 1) continue;
+				double[][] gradient = new double[value.length][2];
+				for(int j = 0; j < value.length; j++) {
+					double x_sum = x_h.get(0)[j] + x_h.get(1)[j] * 2 + x_h.get(2)[j];
+					double y_sum = y_h.get(2)[j] - y_h.get(0)[j];
+					if(x_sum == y_sum) gradient[j][0] = gradient[j][1] = 0;
+					else {
+						double rad = Math.atan2(y_sum, x_sum);
+		        		if(rad < 0) rad += Math.PI * 2;
+		        		
+		        		
+		        		gradient[j][0] = rad;
+		        		gradient[j][1] = Math.sqrt(x_sum * x_sum + y_sum * y_sum);
+					}
+				}
+				x_h.remove(0);
+				y_h.remove(0);
+				rslt_list.add(gradient);
+				/*
+				gradient_tmp.add(gradient);
+				if(gradient_tmp.size() < 2) continue;
+				double[][] canny = new double[value.length][2];
+				if(gradient_tmp.size() == 3) {
+					for(int j = 1; j < value.length - 1; j++) {
+						
+						/
+						double a = 160. / 180. * Math.PI;
+	        			double angle = gradient_tmp.get(1)[j][0] + a / 2;
+	        			int sector = (int)(Math.floor(angle / Math.PI) * 2 + (Math.floor(angle % Math.PI / a) > 0 ? 1 : 0)) % 4;
+						if((sector % 2 == 0 && gradient_tmp.get(1)[j][1] >= Math.max(gradient_tmp.get(1)[j - 1][1], gradient_tmp.get(1)[j + 1][1])) ||
+							(sector % 2 == 1 && gradient_tmp.get(1)[j][1] >= Math.max(gradient_tmp.get(0)[j][1], gradient_tmp.get(2)[j][1]))
+	        			) {
+							canny[j][0] = gradient_tmp.get(1)[j][0];
+							canny[j][1] = Math.min(1, gradient_tmp.get(1)[j][1]);
+						}
+						/
+
+						int sector = (int)Math.floor((gradient_tmp.get(1)[j][0] + Math.PI / 8) / (Math.PI / 4)) % 8;
+						if((sector % 4 == 0 && gradient_tmp.get(1)[j][1] >= Math.max(gradient_tmp.get(1)[j - 1][1], gradient_tmp.get(1)[j + 1][1])) ||
+							(sector % 4 == 1 && gradient_tmp.get(1)[j][1] >= Math.max(gradient_tmp.get(0)[j - 1][1], gradient_tmp.get(2)[j + 1][1])) ||
+							(sector % 4 == 2 && gradient_tmp.get(1)[j][1] >= Math.max(gradient_tmp.get(0)[j][1], gradient_tmp.get(2)[j][1])) ||
+							(sector % 4 == 3 && gradient_tmp.get(1)[j][1] >= Math.max(gradient_tmp.get(0)[j + 1][1], gradient_tmp.get(2)[j - 1][1]))
+	        			) {
+							canny[j][0] = gradient_tmp.get(1)[j][0];
+							canny[j][1] = Math.min(1, gradient_tmp.get(1)[j][1]);
+						}
+
+
+					}
+					gradient_tmp.remove(0);
+				}
+				rslt_list.add(canny);
+				*/
+
+			}
+		}
+	}
+	
 	/*
 	private static class Peak{
 		public int[] freq_index;
@@ -374,7 +453,7 @@ public class SoundTest2 {
 
             double frame_sec = 0.02;
             //System.out.println(frame_sec);
-            double win_sec = 0.04;
+            double win_sec = 0.08;
             int frame_len = (int)(sampleRate * frame_sec);
             double[] win = new double[(int)(sampleRate * win_sec)];
             double win_sum = 0;
@@ -470,7 +549,8 @@ public class SoundTest2 {
             }
             ImageIO.write(img, "PNG", new File("output_eq.png"));//
             
-            
+
+            /*
             int mel_comp = 1;
             int[][] mel_range2 = new int[(int)Math.round(12 * Math.log(sampleRate * 0.5 / A0) / Math.log(2) * mel_comp)][2];
             //int[][] mel_range2 = new int[(int)Math.round(12 * Math.log(sampleRate * 0.5 / A0) / Math.log(2) * mel_comp)][2];
@@ -481,8 +561,27 @@ public class SoundTest2 {
             		mel_range2[key][1] = i;
             	}
             }
+            */
+            
+            int mel_comp = 10;
+            int[][] mel_range = new int[(int)Math.round(12 * Math.log(sampleRate * 0.5 / A0) / Math.log(2) * mel_comp) + 1][2];
+            for(int i = 0; i < n_fft / 2; i++) {
+            	int key1 = (int)Math.round(Math.max(-1, 12 * Math.log((i + 0.) * sampleRate / n_fft / A0) / Math.log(2)) * mel_comp);
+            	int key2 = (int)Math.round(Math.max(-1, 12 * Math.log((i + 1.) * sampleRate / n_fft / A0) / Math.log(2)) * mel_comp);
+            	for(int j = Math.max(0, key1); j <= key2; j++) {
+            		if(mel_range[j][0] == 0) mel_range[j][0] = i;
+            		mel_range[j][1] = i;
+            	}
+            }
+            
+            for(int i = 0; i < mel_range.length; i++) {
+            	System.out.println(i + " : " + mel_range[i][0] + " ~ " + mel_range[i][1]);
+            }
 
+            
+            
             double bin_Hz = sampleRate / n_fft;
+
             
             /*
             int mel_comp = 10;
@@ -519,13 +618,16 @@ public class SoundTest2 {
 
             
 
-            FileInputStream fis = new FileInputStream(new File("sample/drum.pcm"));
+            FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
             
             ArrayList<double[]> mag_list = new ArrayList<>();
             ArrayList<double[]> phase_list = new ArrayList<>();
             ArrayList<double[]> freq_list = new ArrayList<>();
             ArrayList<Complex[]> complex_list = new ArrayList<>();
             ArrayList<int[]> max_list = new ArrayList<>();
+            
+            Sobel sobel = new Sobel();
+            ArrayList<double[][]> gradient_list = new ArrayList<>();
             
             int frame = 0;//임시
             
@@ -583,6 +685,8 @@ public class SoundTest2 {
     					rms2 /= n_fft;
     					*/
     					
+    					
+    					/*
     					double rms2 = 0;
     					double[] mag = new double[n_fft / 2];
     					double[] real_mag = new double[mag.length];
@@ -607,19 +711,20 @@ public class SoundTest2 {
     					rms2 = Math.sqrt(rms2 / (n_fft / 2));
     					System.out.println(rms + ", " + rms2);
     					
-    					//for(int j = 0; j < mag.length; j++) if(mag_max < mag[j]) mag_max = mag[j];
-    					//mag_list.add(mag);
+    					for(int j = 0; j < mag.length; j++) if(mag_max < mag[j]) mag_max = mag[j];
+    					mag_list.add(mag);
     					
-    					for(int j = 0; j < mag.length; j++) if(mag_max < real_mag[j]) mag_max = real_mag[j];
+    					//for(int j = 0; j < mag.length; j++) if(mag_max < real_mag[j]) mag_max = real_mag[j];
     					
     					//for(int j = 1; j < mag.length - 1; j++) if(mag[j] < Math.max(mag[j - 1], mag[j + 1])) real_mag[j] = 0;
     					
     					
-    					mag_list.add(real_mag);
+    					//mag_list.add(real_mag);
     					
     					
     					freq_list.add(freq);
     					phase_list.add(phase);
+    					*/
 
 
     					/*
@@ -657,7 +762,7 @@ public class SoundTest2 {
 						peaks_list.add(peaks);
 						*/
 
-    					/*
+
     					double[] mel = new double[mel_range.length];
     					double[] eq_mel = new double[mel_range.length];
     					double[] freq = new double[mel_range.length];
@@ -683,25 +788,26 @@ public class SoundTest2 {
     					//mag_list.add(mel);
     					phase_list.add(phase);
     					freq_list.add(freq);
-    					*/
 
-    					
+
+
     					/*
     					double[] mel = new double[mel_range.length];
-    					//double[] freq = new double[mel_range.length];
-    					//double[] phase = new double[mel_range.length];
+    					double[] freq = new double[mel_range.length];
+    					double[] phase = new double[mel_range.length];
     					for(int j = 0; j < mel_range.length; j++) {
     						for(int k = mel_range[j][0]; k <= mel_range[j][1]; k++) {
     							mel[j] += complex[k].abs() * mel_weight[j][k - mel_range[j][0]];
     							//freq[j] = k * bin_Hz;
     							//phase[j] = Math.atan2(complex[k].getImaginary(), complex[k].getReal());
     						}
-    						//if(mag_max < mel[j]) mag_max = mel[j];
+    						if(mag_max < mel[j]) mag_max = mel[j];
     					}
-    					//mag_list.add(mel);
-    					//phase_list.add(phase);
-    					//freq_list.add(freq);
-    					 */
+    					mag_list.add(mel);
+    					phase_list.add(phase);
+    					freq_list.add(freq);
+    					*/
+
     					
     					/*
     					double[] mag = new double[n_fft / 2];
@@ -856,10 +962,11 @@ public class SoundTest2 {
             	for(int j = 1; j < mag.length - 1; j++) {
             		int col = (int)(mag[j] / mag_max * 0xFF);
             		dbfs.setRGB(i, mag_list.get(0).length - 1 - j, (col << 24 | col << 16 | col << 8 | col));
-            		if(mag[j] > Math.max(mag[j - 1], mag[j + 1])) dbfs.setRGB(i, mag_list.get(0).length - 1 - j, 0xFFFF0000);
+            		//if(mag[j] > Math.max(mag[j - 1], mag[j + 1])) dbfs.setRGB(i, mag_list.get(0).length - 1 - j, 0xFFFF0000);
             	}
             }
             ImageIO.write(dbfs, "PNG", new File("output_dbfs.png"));//
+            
             
             /*
             int frame_samples = (int)(frame_sec * sampleRate);
