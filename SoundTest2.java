@@ -573,10 +573,6 @@ public class SoundTest2 {
             		mel_range[j][1] = i;
             	}
             }
-            
-            for(int i = 0; i < mel_range.length; i++) {
-            	System.out.println(i + " : " + mel_range[i][0] + " ~ " + mel_range[i][1]);
-            }
 
             
             
@@ -618,7 +614,7 @@ public class SoundTest2 {
 
             
 
-            FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
+            FileInputStream fis = new FileInputStream(new File("sample/drum.pcm"));
             
             ArrayList<double[]> mag_list = new ArrayList<>();
             ArrayList<double[]> phase_list = new ArrayList<>();
