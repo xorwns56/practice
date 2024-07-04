@@ -614,7 +614,7 @@ public class SoundTest2 {
 
             
 
-            FileInputStream fis = new FileInputStream(new File("sample/drum.pcm"));
+            FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
             
             ArrayList<double[]> mag_list = new ArrayList<>();
             ArrayList<double[]> phase_list = new ArrayList<>();
@@ -655,32 +655,13 @@ public class SoundTest2 {
             		for(int j = 0; j < channelCount; j++) samp += (buffer[i * div + j * 2 + 1] << 8) | (buffer[i * div + j * 2] & 0xFF);
         			sampleBuffer[sampleOffset++] = samp / channelCount / 32767.;
                     if(sampleOffset == sampleBuffer.length) {
-                    	
-                    	
-                    	
                     	Complex[] complex = new Complex[n_fft];
-                    	
-                    	
-    					for(int j = 0; j < n_fft; j++) {
-    						complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(win[j]) : 0, 0);
-    					}
+    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(win[j]) : 0, 0);
     					complex = fft.transform(complex, TransformType.FORWARD);
     					
-    					
-    					double rms = 0;
-    					for(int j = 0; j < win.length; j++) {
-    						rms += sampleBuffer[j] * sampleBuffer[j] * win[j];
-    					}
-    					rms = Math.sqrt(rms);
-
-    					/*
-    					double rms2 = 0;
-    					for(int j = 0; j < n_fft; j++) {
-    						rms2 += complex[j].abs() * complex[j].abs();
-    					}
-    					rms2 /= n_fft;
-    					*/
-    					
+    					Mel[] mel = new Mel[n_fft / 2];
+    					//double[] 
+    					for(int j = 0; j < mel.length; j++) mel[j] = new Mel(j * bin_Hz, complex[j].abs(), Math.atan2(complex[j].getImaginary(), complex[j].getReal()));
     					
     					/*
     					double rms2 = 0;
