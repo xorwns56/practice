@@ -448,12 +448,14 @@ public class SoundTest2 {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			int sampleRateOrigin = 44100;
+			FileInputStream fis = new FileInputStream(new File("sample/sample2.pcm"));
+			int sampleRateOrigin = 48000;
 			double sampleRate = sampleRateOrigin;
 
             double frame_sec = 0.02;
             //System.out.println(frame_sec);
-            double win_sec = 0.02;
+            double win_sec = frame_sec * 15;
+            //double win_sec = 0.02;
             int frame_len = (int)(sampleRate * frame_sec);
             double[] win = new double[(int)(sampleRate * win_sec)];
             double win_sum = 0;
@@ -481,6 +483,7 @@ public class SoundTest2 {
             while(n_fft < win.length) n_fft <<= 1;
 			//while(n_fft < win.length || A0 * (Math.pow(2, (keyStart - 0.5 + 1. / mel_compression) / 12) - Math.pow(2, (keyStart - 0.5) / 12)) < sampleRate / n_fft) n_fft <<= 1;
 
+            n_fft = 8192;
             
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
@@ -623,9 +626,6 @@ public class SoundTest2 {
             */
 
             
-
-            FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
-            
             ArrayList<double[]> mag_list = new ArrayList<>();
             ArrayList<double[]> phase_list = new ArrayList<>();
             ArrayList<double[]> freq_list = new ArrayList<>();
@@ -678,18 +678,48 @@ public class SoundTest2 {
     					for(int j = 0; j < wave.length; j++) wave[j] = new Wave(j * bin_Hz, complex[j].abs(), Math.atan2(complex[j].getImaginary(), complex[j].getReal()));
     					wave_list.add(wave);
     					
+    					/*
+    					Wave[] comp = new Wave[comp_range.length];
+    					for(int j = 0; j < comp.length; j++) {
+    						comp[j] = new Wave(0, 0, 0);
+    						for(int k = comp_range[j][0]; k <= comp_range[j][1]; k++) {
+    							if(comp[j].amplitude < wave[k].amplitude) comp[j] = wave[k];
+    						}
+    						if(mag_max < comp[j].amplitude) mag_max = comp[j].amplitude;
+    					}
+    					wave_list.add(comp);
+    					double[] c = new double[comp_range.length];
+    					mag_list.add(c);
+    					*/
+    					
     					double[] comp = new double[comp_range.length];
+    					int[] max_idx = new int[comp.length];
     					for(int j = 0; j < comp.length; j++) {
     						for(int k = comp_range[j][0]; k <= comp_range[j][1]; k++) {
-    							comp[j] = Math.max(comp[j], wave[k].amplitude);
+    							if(comp[j] < wave[k].amplitude) {
+    								
+    								max_idx[j] = k;
+    								comp[j] = wave[k].amplitude;
+    								
+    							}
+    							
+    							//comp[j] = Math.max(comp[j], wave[k].amplitude);
     						}
     						if(mag_max < comp[j]) mag_max = comp[j];
     					}
     					mag_list.add(comp);
-    					
-    					
+
     					boolean[] valid = new boolean[wave.length];
     					
+    					/*
+    					for(int j = 0; j < max_idx.length; j++) {
+    						valid[max_idx[j]] = true;
+    					}
+    					valid_list.add(valid);
+    					*/
+
+
+
     					ArrayList<Peak> peaks = new ArrayList<>();
 						for(int j = 0; j < comp.length; j++) {
 							if(comp[j] > 0) {
@@ -706,16 +736,18 @@ public class SoundTest2 {
 								}
 								int end = j;
 								
-								//peaks.add(new Peak(frame, start, peak, end, comp[peak[0]], 0, 0));
+								peaks.add(new Peak(frame, start, peak, end, comp[peak[0]], 0, 0));
 								
-								for(int k = comp_range[peak[0]][0]; k <= comp_range[peak[1]][1]; k++) {
-									valid[k] = true;
-								}
+								//for(int k = comp_range[peak[0]][0]; k <= comp_range[peak[1]][1]; k++) valid[k] = true;
+								
+								for(int k = comp_range[start][0]; k <= comp_range[end][1]; k++) valid[k] = true;
+								//for(int k = max_idx[start]; k <= max_idx[end]; k++) valid[k] = true;
 							}
 						}
-						
-						valid_list.add(valid);
 						peaks_list.add(peaks);
+						valid_list.add(valid);
+
+
     					
     					
     					/*
@@ -929,6 +961,7 @@ public class SoundTest2 {
             System.out.println(System.currentTimeMillis() - stamp);
             
 
+            /*
             BufferedImage peak = new BufferedImage(peaks_list.size(), comp_range.length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < peaks_list.size(); i++) {
             	ArrayList<Peak> peaks = peaks_list.get(i);
@@ -947,6 +980,7 @@ public class SoundTest2 {
             	}
             }
             ImageIO.write(peak, "PNG", new File("output_peak.png"));//
+            */
             
             
             BufferedImage valid_img = new BufferedImage(valid_list.size(), valid_list.get(0).length, BufferedImage.TYPE_INT_RGB);
@@ -961,6 +995,8 @@ public class SoundTest2 {
             	}
             }
             ImageIO.write(valid_img, "PNG", new File("output_valid.png"));//
+
+            
             
             BufferedImage dbfs = new BufferedImage(mag_list.size(), mag_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < mag_list.size(); i++) {
