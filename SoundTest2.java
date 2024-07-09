@@ -448,18 +448,20 @@ public class SoundTest2 {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			FileInputStream fis = new FileInputStream(new File("sample/sample2.pcm"));
-			int sampleRateOrigin = 48000;
+			FileInputStream fis = new FileInputStream(new File("sample/drum.pcm"));
+			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
             double frame_sec = 0.02;
             //System.out.println(frame_sec);
-            double win_sec = frame_sec * 15;
+            double win_sec = frame_sec;
             //double win_sec = 0.02;
             int frame_len = (int)(sampleRate * frame_sec);
-            double[] win = new double[(int)(sampleRate * win_sec)];
-            double win_sum = 0;
-            for(int i = 0; i < win.length; i++) {
+            double[] rect_win = new double[(int)(sampleRate * win_sec)];
+            double[] hann_win = new double[rect_win.length];
+            double rect_win_sum = 0;
+            double hann_win_sum = 0;
+            for(int i = 0; i < rect_win.length; i++) {
             	double a0 = 0.21557895;
             	double a1 = 0.41663158;
             	double a2 = 0.277263158;
@@ -468,29 +470,32 @@ public class SoundTest2 {
             	//win[i] = a0 - a1 * Math.cos(2.0 * Math.PI * i / (win.length - 1)) + a2 * Math.cos(4.0 * Math.PI * i / (win.length - 1)) - a3 * Math.cos(6.0 * Math.PI * i / (win.length - 1)) + a4 * Math.cos(8.0 * Math.PI * i / (win.length - 1));
             	
             	//win[i] = 0.54 - 0.46 * Math.cos(2.0 * Math.PI * i / (win.length - 1));
+            	rect_win[i] = 1;
+            	hann_win[i] = 0.5 * (1 - Math.cos(2.0 * Math.PI * i / (hann_win.length - 1)));
             	
-            	//win[i] = 0.5 * (1 - Math.cos(2.0 * Math.PI * i / (win.length - 1)));
-            	win[i] = 1;
-            	
-            	win_sum += win[i];
+            	rect_win_sum += rect_win[i];
+            	hann_win_sum += hann_win[i];
             }
-            for(int i = 0; i < win.length; i++) win[i] *= 1 / win_sum;
+            for(int i = 0; i < rect_win.length; i++) {
+            	rect_win[i] *= 1 / rect_win_sum;
+            	hann_win[i] *= 1 / hann_win_sum;
+            }
 
             
             int n_fft = 2;
             int mel_compression = 2;
             
-            while(n_fft < win.length) n_fft <<= 1;
+            while(n_fft < rect_win.length) n_fft <<= 1;
 			//while(n_fft < win.length || A0 * (Math.pow(2, (keyStart - 0.5 + 1. / mel_compression) / 12) - Math.pow(2, (keyStart - 0.5) / 12)) < sampleRate / n_fft) n_fft <<= 1;
 
-            n_fft = 8192;
+            //n_fft = 8192;
             
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
-            System.out.println("win : " + win.length + ", n_fft : " + n_fft);
+            System.out.println("win : " + rect_win.length + ", n_fft : " + n_fft);
             
             
-            double[] sampleBuffer = new double[win.length];
+            double[] sampleBuffer = new double[rect_win.length];
             int sampleOffset = sampleBuffer.length - frame_len;
             
             double equal_loudness_max = 0;
@@ -670,8 +675,9 @@ public class SoundTest2 {
             		for(int j = 0; j < channelCount; j++) samp += (buffer[i * div + j * 2 + 1] << 8) | (buffer[i * div + j * 2] & 0xFF);
         			sampleBuffer[sampleOffset++] = samp / channelCount / 32767.;
                     if(sampleOffset == sampleBuffer.length) {
+
                     	Complex[] complex = new Complex[n_fft];
-    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(win[j]) : 0, 0);
+    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(rect_win[j]) : 0, 0);
     					complex = fft.transform(complex, TransformType.FORWARD);
     					
     					Wave[] wave = new Wave[n_fft / 2];
@@ -690,6 +696,14 @@ public class SoundTest2 {
     					wave_list.add(comp);
     					double[] c = new double[comp_range.length];
     					mag_list.add(c);
+    					*/
+    					
+    					/*
+    					Complex[] complex2 = new Complex[n_fft];
+    					for(int j = 0; j < n_fft; j++) complex2[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(hann_win[j]) : 0, 0);
+    					complex2 = fft.transform(complex2, TransformType.FORWARD);
+    					Wave[] wave2 = new Wave[n_fft / 2];
+    					for(int j = 0; j < wave2.length; j++) wave2[j] = new Wave(j * bin_Hz, complex2[j].abs(), Math.atan2(complex2[j].getImaginary(), complex2[j].getReal()));
     					*/
     					
     					double[] comp = new double[comp_range.length];
@@ -711,18 +725,18 @@ public class SoundTest2 {
 
     					boolean[] valid = new boolean[wave.length];
     					
-    					/*
+
     					for(int j = 0; j < max_idx.length; j++) {
     						valid[max_idx[j]] = true;
     					}
     					valid_list.add(valid);
-    					*/
 
 
 
+    					/*
     					ArrayList<Peak> peaks = new ArrayList<>();
 						for(int j = 0; j < comp.length; j++) {
-							if(comp[j] > 0) {
+							if(comp[j] > 0.00) {
 								int start = j;
 								int[] peak = new int[2];
 								peak[0] = j;
@@ -731,7 +745,7 @@ public class SoundTest2 {
 									j++;
 								}
 								peak[1] = j;
-								while(j + 1 < comp.length && 0 < comp[j + 1] && comp[j + 1] <= comp[j]) {
+								while(j + 1 < comp.length && 0.00 < comp[j + 1] && comp[j + 1] <= comp[j]) {
 									j++;
 								}
 								int end = j;
@@ -740,12 +754,14 @@ public class SoundTest2 {
 								
 								//for(int k = comp_range[peak[0]][0]; k <= comp_range[peak[1]][1]; k++) valid[k] = true;
 								
+								if(comp[peak[0]] > 0.001)
 								for(int k = comp_range[start][0]; k <= comp_range[end][1]; k++) valid[k] = true;
 								//for(int k = max_idx[start]; k <= max_idx[end]; k++) valid[k] = true;
 							}
 						}
 						peaks_list.add(peaks);
 						valid_list.add(valid);
+						*/
 
 
     					
