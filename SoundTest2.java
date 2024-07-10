@@ -448,11 +448,11 @@ public class SoundTest2 {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			FileInputStream fis = new FileInputStream(new File("sample/drum.pcm"));
+			FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
 			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
-            double frame_sec = 0.02;
+            double frame_sec = 0.05;
             //System.out.println(frame_sec);
             double win_sec = frame_sec;
             //double win_sec = 0.02;
@@ -727,7 +727,7 @@ public class SoundTest2 {
     					
 
     					for(int j = 0; j < max_idx.length; j++) {
-    						valid[max_idx[j]] = true;
+    						if(wave[max_idx[j]].amplitude * eq[max_idx[j]] > 0.005) valid[max_idx[j]] = true;
     					}
     					valid_list.add(valid);
 
