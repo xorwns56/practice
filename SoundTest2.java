@@ -452,7 +452,7 @@ public class SoundTest2 {
 			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
-            double frame_sec = 0.05;
+            double frame_sec = 1.0;
             //System.out.println(frame_sec);
             double win_sec = frame_sec;
             //double win_sec = 0.02;
@@ -724,13 +724,16 @@ public class SoundTest2 {
     					mag_list.add(comp);
 
     					boolean[] valid = new boolean[wave.length];
-    					
-
-    					for(int j = 0; j < max_idx.length; j++) {
-    						if(wave[max_idx[j]].amplitude * eq[max_idx[j]] > 0.005) valid[max_idx[j]] = true;
+    					for(int j = 0; j < wave.length; j++) {
+    						if(wave[j].amplitude * eq[j] > 0.01) valid[j] = true;
     					}
+    					/*
+    					for(int j = 0; j < max_idx.length; j++) {
+    						//if(wave[max_idx[j]].amplitude * eq[max_idx[j]] > 0.005)
+    						valid[max_idx[j]] = true;
+    					}
+    					*/
     					valid_list.add(valid);
-
 
 
     					/*
@@ -969,7 +972,7 @@ public class SoundTest2 {
                         System.arraycopy(sampleBuffer, frame_len, sampleBuffer, 0, sampleOffset);
                         frame++;
                         
-                        if(frame == 1000) bb = true;
+                        if(frame == 10) bb = true;
                     }
             	}
             	if(bb) break;
@@ -1012,6 +1015,17 @@ public class SoundTest2 {
             }
             ImageIO.write(valid_img, "PNG", new File("output_valid.png"));//
 
+            BufferedImage wave_img = new BufferedImage(wave_list.size(), wave_list.get(0).length, BufferedImage.TYPE_INT_RGB);
+            for(int i = 0; i < wave_list.size(); i++) {
+            	Wave[] wave = wave_list.get(i);
+            	
+            	for(int j = 0; j < wave.length; j++) {
+            		int col = (int)(wave[j].amplitude / mag_max * 0xFF);
+            		wave_img.setRGB(i, wave_list.get(0).length - 1 - j, (col << 24 | col << 16 | col << 8 | col));
+            	}
+            }
+            ImageIO.write(wave_img, "PNG", new File("output_wave.png"));         
+            
             
             
             BufferedImage dbfs = new BufferedImage(mag_list.size(), mag_list.get(0).length, BufferedImage.TYPE_INT_RGB);
