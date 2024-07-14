@@ -150,7 +150,7 @@ public class SoundTest {
 		return pcmBytesArray;
 	}
 	
-	static final double A0 = 27.5;
+	static final double A0 = 13.75;
 	
 	public static double i0(double x){
 		return (Math.cosh(x) + 2 * (Math.cosh(0.970941817426052 * x) + Math.cosh(0.8854560256532099 * x) + Math.cosh(0.7485107481711011 * x) + Math.cosh(0.5680647467311558 * x) + Math.cosh(0.3546048870425356 * x) + Math.cosh(0.120536680255323 * x))) / 13;
@@ -704,6 +704,7 @@ public class SoundTest {
 			double[] kaiserWindowedSinc = new double[] { 1 };
 			int decimation = 1;
 			while((sampleRateOrigin * 0.5 / (decimation + 1) - A0 * Math.pow(2, (keyStart + keyCount - 0.5) / 12)) >= sampleRateOrigin * 0.01) decimation++;
+			//decimation = 1;
 			if(decimation > 1) {
 				sampleRate /= decimation;
 				kaiserWindowedSinc = kaiserWindowedSinc(A0 * Math.pow(2, (keyStart + keyCount - 0.5) / 12) / sampleRateOrigin, sampleRate * 0.5 / sampleRateOrigin, 80);
@@ -714,7 +715,7 @@ public class SoundTest {
 
             double frame_sec = 0.01;
             //System.out.println(frame_sec);
-            double win_sec = 0.16;
+            double win_sec = 0.08;
             int frame_len = (int)(sampleRate * frame_sec);
             double[] win = new double[(int)(sampleRate * win_sec)];
             double win_sum = 0;
@@ -767,7 +768,7 @@ public class SoundTest {
             
             //n_fft = 8192;
             
-            //n_fft = n_fft * 2 * 2;
+            n_fft = n_fft * 2 * 2 * 2;
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
             System.out.println("win : " + win.length + ", n_fft : " + n_fft);
@@ -871,7 +872,7 @@ public class SoundTest {
             */
             
 
-            FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
+            FileInputStream fis = new FileInputStream(new File("sample/sample4.pcm"));
             boolean mel_gaus = true;
             boolean toDB = false;
             double dbRange = 80;
@@ -939,7 +940,7 @@ public class SoundTest {
             	}
             }
             */
-            int mel_comp = 10;
+            int mel_comp = 1;
             
             double[] mel_lerp = new double[keyCount * mel_comp];
             for(int i = 0; i < mel_lerp.length; i++) mel_lerp[i] = Math.pow(2, ((i - keyStart - mel_comp / 2) / (double)mel_comp) / 12) * A0 / bin_Hz;
@@ -1175,17 +1176,19 @@ public class SoundTest {
             
             double mag_max = 0;
 
-            int[][] mel_range2 = new int[keyCount][2];
+            
+            int mel_comp2 = 1;
+            int[][] mel_range2 = new int[keyCount * mel_comp2][2];
             for(int i = 0; i < n_fft / 2; i++) {
-            	int key = (int)Math.round(Math.max(-1, 12 * Math.log((double)i * sampleRate / n_fft / A0) / Math.log(2)));
-            	if(0 <= key && key < keyCount) {
+            	int key = (int)Math.round(Math.max(-1, 12 * Math.log((double)i * sampleRate / n_fft / A0) / Math.log(2)) * mel_comp2);
+            	System.out.println(Math.max(-1, 12 * Math.log((double)i * sampleRate / n_fft / A0) / Math.log(2)) * mel_comp2);
+            	if(0 <= key && key < mel_range2.length) {
             		if(mel_range2[key][0] == 0) mel_range2[key][0] = i;
             		mel_range2[key][1] = i;
             	}
             }
             
-            
-            /*
+
             int[][] mag_range = new int[eq.length][2];
             double mag_radius = 0.5;
             for(int j = 0; j < eq.length; j++) {
@@ -1199,7 +1202,7 @@ public class SoundTest {
             	mag_range[j][0] = Math.max(0, (int)Math.floor(freq1 * Math.pow(2, -mag_radius / 12) * n_fft / sampleRate));
             	mag_range[j][1] = Math.min(eq.length - 1, (int)Math.floor(freq2 * Math.pow(2, mag_radius / 12) * n_fft / sampleRate));
             }
-            */
+
             
             ArrayList<ArrayList<Peak>> peaks_list = new ArrayList<>();
             
@@ -1227,18 +1230,21 @@ public class SoundTest {
             			
                         if(sampleOffset == sampleBuffer.length) {
                         	Complex[] complex = new Complex[n_fft];
-        					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(win[j]) : 0, 0);
+        					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * win[j] : 0, 0);
         					complex = fft.transform(complex, TransformType.FORWARD);
 
         					double[] mag = new double[n_fft / 2];
-        					double[] angle = new double[n_fft / 2];
+        					double[] phase = new double[n_fft / 2];
         					for(int j = 0; j < mag.length; j++) {
-        						mag[j] = complex[j].abs() * complex[j].abs(); //이건가 아래껀가 고민됨
+        						mag[j] = complex[j].abs(); //이건가 아래껀가 고민됨
         						//mag[j] = complex[j].abs();
         						
-        						angle[j] = Math.atan2(complex[j].getImaginary(), complex[j].getReal());
+        						phase[j] = Math.atan2(complex[j].getImaginary(), complex[j].getReal());
+        						
+        						if(mag[j] < mag_max) mag_max = mag[j];
         					}
         					
+        					/*
         					double[] mel = new double[mel_range2.length];
         					int[] freq = new int[mel_range2.length];
         					double[] phase = new double[mel_range2.length];
@@ -1254,13 +1260,9 @@ public class SoundTest {
         					}
         					
         					
-        					dbfs_list.add(mel);
-        					dbfs2_list.add(phase);
-        					freq_list.add(freq);
+        					*/
         					
-        					
-        					
-        					/*
+
         					int[] curr_range = new int[] {0, 0};
     			            pq.add(new IndexValuePair(0, mag[0]));
     						for(int j = 0; j < eq.length; j++) {
@@ -1269,8 +1271,6 @@ public class SoundTest {
     							curr_range = mag_range[j];
     							while(pq.peek().index < curr_range[0]) pq.remove();
     							mag[j] = pq.peek().value;
-    							
-    							//if(mag_mag_max < mag[j]) mag_mag_max = mag[j];
     							//dbfs[j] = Math.max(0, 20 * Math.log10(pq.peek().value) + dbNorm) / dbNorm;
     							//grayscale[j] = (int)(Math.max(0, 20 * Math.log10(dbfs[j]) + dbNorm) / dbNorm * 0xFF);
     						}
@@ -1304,7 +1304,10 @@ public class SoundTest {
     							}
     						}
 							peaks_list.add(peaks);
-							*/
+							
+							
+							dbfs_list.add(mag);
+        					dbfs2_list.add(phase);
         					
         					//mag = blur(mag, 50);
         					
@@ -1339,7 +1342,7 @@ public class SoundTest {
             System.out.println(System.currentTimeMillis() - stamp);
             
             
-            /*
+
             for(int i = 0; i < peaks_list.size(); i++) {
             	List<Peak> peaks = peaks_list.get(i);
             	
@@ -1353,10 +1356,9 @@ public class SoundTest {
             	}
             	mel_frames.add(mels);
             }
-            
-            */
 
             
+            /*
             BufferedImage dbfs = new BufferedImage(dbfs_list.size(), dbfs_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < dbfs_list.size(); i++) {
             	double[] mel = dbfs_list.get(i);
@@ -1365,12 +1367,12 @@ public class SoundTest {
             	
             	List<Mel> mels = new ArrayList<>();
             	
-            	for(int j = 0; j < mel.length; j++) {
+            	for(int j = 1; j < mel.length - 1; j++) {
 
             		//if(mag[j] > Math.max(mag[j - 1], mag[j + 1])) mels.add(new Mel(mel_freq[j], mag[j] / mag_max));
             		//mag[j] > Math.max(mag[j - 1], mag[j + 1])
             		//if(mag[j] > Math.max(mag[j - 1], mag[j + 1]) && j * bin_Hz > 20)
-            		mels.add(new Mel(freq[j] * bin_Hz, mel[j] / mag_max, phase[j]));
+            		if(mel[j] > Math.max(mel[j - 1], mel[j + 1])) mels.add(new Mel(freq[j] * bin_Hz, mel[j] / mag_max, phase[j]));
             		
             		//mels.add(new Mel(Math.pow(2, j / 12.) * A0, mel[j] / mag_max, phase[j]));
             		
@@ -1381,6 +1383,7 @@ public class SoundTest {
             	mel_frames.add(mels);
             }
             ImageIO.write(dbfs, "PNG", new File("output_dbfs.png"));//
+            */
             
             byte[] pcmBytesArray = mel_to_pcm((int)sampleRate, frame_sec, mel_frames);
             
