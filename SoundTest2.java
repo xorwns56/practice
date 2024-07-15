@@ -452,9 +452,9 @@ public class SoundTest2 {
 			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
-            double frame_sec = 1.0;
+            double frame_sec = 0.02;
             //System.out.println(frame_sec);
-            double win_sec = frame_sec;
+            double win_sec = frame_sec * 15;
             //double win_sec = 0.02;
             int frame_len = (int)(sampleRate * frame_sec);
             double[] rect_win = new double[(int)(sampleRate * win_sec)];
@@ -571,7 +571,7 @@ public class SoundTest2 {
             }
             */
             
-
+            /*
             int mel_comp = 10;
             int[][] comp_range = new int[(int)Math.round(12 * Math.log(sampleRate * 0.5 / A0) / Math.log(2) * mel_comp) + 1][2];
             for(int i = 0; i < n_fft / 2; i++) {
@@ -582,6 +582,7 @@ public class SoundTest2 {
             		comp_range[j][1] = i;
             	}
             }
+            */
             
             /*
             int mel_comp = 10;
@@ -597,8 +598,8 @@ public class SoundTest2 {
             double bin_Hz = sampleRate / n_fft;
 
             
-            /*
-            int mel_comp = 10;
+
+            int mel_comp = 1;
             int keyCount = 100;
             int keyStart = 0;
             int[][] mel_range = new int[keyCount * mel_comp][2];
@@ -628,7 +629,7 @@ public class SoundTest2 {
 				}
 				//for(int j = mel_range[i][0]; j <= mel_range[i][1]; j++) mel_weight[i][j - mel_range[i][0]] /= weight_sum;
             }
-            */
+
 
             
             ArrayList<double[]> mag_list = new ArrayList<>();
@@ -706,6 +707,8 @@ public class SoundTest2 {
     					for(int j = 0; j < wave2.length; j++) wave2[j] = new Wave(j * bin_Hz, complex2[j].abs(), Math.atan2(complex2[j].getImaginary(), complex2[j].getReal()));
     					*/
     					
+    					
+    					/*
     					double[] comp = new double[comp_range.length];
     					int[] max_idx = new int[comp.length];
     					for(int j = 0; j < comp.length; j++) {
@@ -722,7 +725,19 @@ public class SoundTest2 {
     						if(mag_max < comp[j]) mag_max = comp[j];
     					}
     					mag_list.add(comp);
-
+    					*/
+    					
+    					double[] mel = new double[mel_range.length];
+    					for(int j = 0; j < mel.length; j++) {
+    						for(int k = mel_range[j][0]; k <= mel_range[j][1]; k++) {
+    							mel[j] += wave[j].amplitude * mel_weight[j][k - mel_range[j][0]];
+    							//comp[j] = Math.max(comp[j], wave[k].amplitude);
+    						}
+    						if(mag_max < mel[j]) mag_max = mel[j];
+    					}
+    					mag_list.add(mel);
+    					
+    					
     					boolean[] valid = new boolean[wave.length];
     					for(int j = 0; j < wave.length; j++) {
     						if(wave[j].amplitude * eq[j] > 0.01) valid[j] = true;
@@ -972,7 +987,7 @@ public class SoundTest2 {
                         System.arraycopy(sampleBuffer, frame_len, sampleBuffer, 0, sampleOffset);
                         frame++;
                         
-                        if(frame == 10) bb = true;
+                        //if(frame == 10) bb = true;
                     }
             	}
             	if(bb) break;
@@ -1015,6 +1030,7 @@ public class SoundTest2 {
             }
             ImageIO.write(valid_img, "PNG", new File("output_valid.png"));//
 
+            /*
             BufferedImage wave_img = new BufferedImage(wave_list.size(), wave_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < wave_list.size(); i++) {
             	Wave[] wave = wave_list.get(i);
@@ -1024,7 +1040,8 @@ public class SoundTest2 {
             		wave_img.setRGB(i, wave_list.get(0).length - 1 - j, (col << 24 | col << 16 | col << 8 | col));
             	}
             }
-            ImageIO.write(wave_img, "PNG", new File("output_wave.png"));         
+            ImageIO.write(wave_img, "PNG", new File("output_wave.png"));
+            */        
             
             
             
