@@ -295,7 +295,7 @@ public class SoundTest2 {
 		return pcmBytesArray;
 	}
 	
-	static final double A0 = 27.5 / 2;
+	static final double A0 = 27.5;
 
 	/*
 	public static class Prewitt {
@@ -598,7 +598,7 @@ public class SoundTest2 {
             double bin_Hz = sampleRate / n_fft;
 
             
-
+            /*
             int mel_comp = 1;
             int keyCount = 100;
             int keyStart = 0;
@@ -628,6 +628,52 @@ public class SoundTest2 {
 					//weight_sum += weight;
 				}
 				//for(int j = mel_range[i][0]; j <= mel_range[i][1]; j++) mel_weight[i][j - mel_range[i][0]] /= weight_sum;
+            }
+            */
+            
+            int mel_comp = 10;
+            int[][] mel_range = new int[(int)Math.round(12 * Math.log(sampleRate * 0.5 / A0) / Math.log(2) * mel_comp) + 1][2];
+            
+            System.out.println(mel_range.length);
+            
+            double a = 12 * Math.log(20 / A0) / Math.log(2);
+            
+            System.out.println(Math.ceil(a));
+            
+            //System.out.println(Math.pow(2, 15.1 / 12) * A0);
+            
+            double[][] mel_weight = new double[mel_range.length][];
+            for(int i = 0; i < mel_range.length; i++) {
+            	
+            	double center = Math.pow(2, ((i / (double)mel_comp - 6.) / 12)) * A0;
+            	
+            	//double center = (int)Math.round(Math.max(-1, 12 * Math.log((i + 0.) * sampleRate / n_fft / A0) / Math.log(2)) * mel_comp);
+
+            	
+            	
+            	//double center = Math.pow(2, ((i - 0 - mel_comp / 2) / (double)mel_comp) / 12) * A0;
+            	
+            	
+            	System.out.println(center);
+            	//System.out.println(center + ", " + center / bin_Hz);
+            	
+            	double left = center * Math.pow(2, -1. / 12);
+            	double right = center * Math.pow(2, 1. / 12);
+            	
+            	//System.out.println(i + " : " + center + ", " + left + " ~ " + right);
+            	
+            	//if(i == 0) System.out.println(center - center * Math.pow(2, -0.1 / 12));
+            	mel_range[i][0] = (int)Math.max(0, (int)Math.ceil(left));
+				mel_range[i][1] = (int)Math.min(eq.length - 1, (int)Math.floor(right));
+				mel_weight[i] = new double[mel_range[i][1] - mel_range[i][0] + 1];
+				//double weight_sum = 0;
+				for(int j = mel_range[i][0]; j <= mel_range[i][1]; j++) {
+					double weight = 0;
+					if(j < center) weight = (j - left) / (center - left);
+					else weight = (j - right) / (center - right);
+					mel_weight[i][j - mel_range[i][0]] = weight;
+				}
+
             }
 
 
