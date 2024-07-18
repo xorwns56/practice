@@ -488,7 +488,7 @@ public class SoundTest2 {
             while(n_fft < rect_win.length) n_fft <<= 1;
 			//while(n_fft < win.length || A0 * (Math.pow(2, (keyStart - 0.5 + 1. / mel_compression) / 12) - Math.pow(2, (keyStart - 0.5) / 12)) < sampleRate / n_fft) n_fft <<= 1;
 
-            //n_fft = 8192;
+            //n_fft *= 2 * 2;
             
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
@@ -498,9 +498,8 @@ public class SoundTest2 {
             double[] sampleBuffer = new double[rect_win.length];
             int sampleOffset = sampleBuffer.length - frame_len;
             
+            /*
             double equal_loudness_max = 0;
-
-
             double[] eq = new double[n_fft / 2];
             for(int i = 0; i < eq.length; i++) {
             	double pivot = 1000.;
@@ -512,6 +511,7 @@ public class SoundTest2 {
             	eq[i] = Math.abs(n_freq / n_pivot);
             	if(equal_loudness_max < eq[i]) equal_loudness_max = eq[i];
             }
+            */
 
 
             
@@ -547,15 +547,6 @@ public class SoundTest2 {
             	}
             }
             */
-
-            System.out.println(equal_loudness_max);
-
-            for(int i = 0; i < eq.length; i++) eq[i] /= equal_loudness_max;
-            BufferedImage img = new BufferedImage(eq.length, 500, BufferedImage.TYPE_INT_RGB);
-            for(int i = 0; i < img.getWidth(); i++) {
-            	img.setRGB(i, (int)((img.getHeight() - 1) * (1 - eq[i])), 0xFFFFFFFF);
-            }
-            ImageIO.write(img, "PNG", new File("output_eq.png"));//
             
 
             /*
@@ -631,21 +622,34 @@ public class SoundTest2 {
             }
             */
             
-            int mel_comp = 10;
-            int[][] mel_range = new int[(int)Math.round(12 * Math.log(sampleRate * 0.5 / A0) / Math.log(2) * mel_comp) + 1][2];
+            
+            double a_freq = 20;
+            double b_freq = 20000;
+            
+            int mel_comp = 20;
+            double influence = 1.0;
+            int a = (int)Math.ceil((12 * Math.log(a_freq / A0) / Math.log(2) + influence) * mel_comp);
+            int b = (int)Math.floor((12 * Math.log(Math.min(b_freq, sampleRate * 0.5) / A0) / Math.log(2) - influence) * mel_comp);
+            int[][] mel_range = new int[b - a + 1][2];
+            double[] mel_freq = new double[mel_range.length];
+            double[] mel_eq = new double[mel_range.length];
             
             System.out.println(mel_range.length);
             
-            double a = 12 * Math.log(20 / A0) / Math.log(2);
-            
-            System.out.println(Math.ceil(a));
+            System.out.println(a);
+            System.out.println(b);
+            //System.out.println(a + influence * mel_comp);
+            //System.out.println(b - influence * mel_comp);
             
             //System.out.println(Math.pow(2, 15.1 / 12) * A0);
             
+            double equal_loudness_max = 0;
+            
             double[][] mel_weight = new double[mel_range.length][];
             for(int i = 0; i < mel_range.length; i++) {
-            	
-            	double center = Math.pow(2, ((i / (double)mel_comp - 6.) / 12)) * A0;
+            	mel_freq[i] = Math.pow(2, ((i + a) / (double)mel_comp / 12)) * A0;
+
+            	double center = mel_freq[i] / bin_Hz;
             	
             	//double center = (int)Math.round(Math.max(-1, 12 * Math.log((i + 0.) * sampleRate / n_fft / A0) / Math.log(2)) * mel_comp);
 
@@ -654,27 +658,45 @@ public class SoundTest2 {
             	//double center = Math.pow(2, ((i - 0 - mel_comp / 2) / (double)mel_comp) / 12) * A0;
             	
             	
-            	System.out.println(center);
+            	//System.out.println(center);
             	//System.out.println(center + ", " + center / bin_Hz);
             	
-            	double left = center * Math.pow(2, -1. / 12);
-            	double right = center * Math.pow(2, 1. / 12);
+            	double left = center * Math.pow(2, -influence / 12);
+            	double right = center * Math.pow(2, influence / 12);
             	
             	//System.out.println(i + " : " + center + ", " + left + " ~ " + right);
             	
-            	//if(i == 0) System.out.println(center - center * Math.pow(2, -0.1 / 12));
             	mel_range[i][0] = (int)Math.max(0, (int)Math.ceil(left));
-				mel_range[i][1] = (int)Math.min(eq.length - 1, (int)Math.floor(right));
+				mel_range[i][1] = (int)Math.min(n_fft / 2, (int)Math.floor(right));
+            	
+				//System.out.println(i + " : " + center + ", " + mel_range[i][0] + " ~ " + mel_range[i][1]);
+
+            	//if(i == 0) System.out.println(center - center * Math.pow(2, -0.1 / 12));
 				mel_weight[i] = new double[mel_range[i][1] - mel_range[i][0] + 1];
-				//double weight_sum = 0;
+				double weight_sum = 0;
 				for(int j = mel_range[i][0]; j <= mel_range[i][1]; j++) {
 					double weight = 0;
 					if(j < center) weight = (j - left) / (center - left);
 					else weight = (j - right) / (center - right);
 					mel_weight[i][j - mel_range[i][0]] = weight;
+					
+					weight_sum += weight;
 				}
-
+				
+				//mel_eq[i] = 1 / weight_sum;
+				mel_eq[i] = equal_loudness(mel_freq[i]);
+            	if(equal_loudness_max < mel_eq[i]) equal_loudness_max = mel_eq[i];
             }
+            
+            /*
+            for(int i = 0; i < mel_eq.length; i++) mel_eq[i] /= equal_loudness_max;
+            BufferedImage img = new BufferedImage(mel_eq.length, 500, BufferedImage.TYPE_INT_RGB);
+            for(int i = 0; i < img.getWidth(); i++) {
+            	img.setRGB(i, (int)((img.getHeight() - 1) * (1 - mel_eq[i])), 0xFFFFFFFF);
+            }
+            ImageIO.write(img, "PNG", new File("output_eq.png"));//
+            */
+
 
 
             
@@ -724,12 +746,12 @@ public class SoundTest2 {
                     if(sampleOffset == sampleBuffer.length) {
 
                     	Complex[] complex = new Complex[n_fft];
-    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(rect_win[j]) : 0, 0);
+    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(hann_win[j]) : 0, 0);
     					complex = fft.transform(complex, TransformType.FORWARD);
     					
     					Wave[] wave = new Wave[n_fft / 2];
     					for(int j = 0; j < wave.length; j++) wave[j] = new Wave(j * bin_Hz, complex[j].abs(), Math.atan2(complex[j].getImaginary(), complex[j].getReal()));
-    					wave_list.add(wave);
+    					//wave_list.add(wave);
     					
     					/*
     					Wave[] comp = new Wave[comp_range.length];
@@ -776,25 +798,26 @@ public class SoundTest2 {
     					double[] mel = new double[mel_range.length];
     					for(int j = 0; j < mel.length; j++) {
     						for(int k = mel_range[j][0]; k <= mel_range[j][1]; k++) {
-    							mel[j] += wave[j].amplitude * mel_weight[j][k - mel_range[j][0]];
+    							mel[j] += wave[k].amplitude * mel_weight[j][k - mel_range[j][0]];
     							//comp[j] = Math.max(comp[j], wave[k].amplitude);
     						}
     						if(mag_max < mel[j]) mag_max = mel[j];
     					}
     					mag_list.add(mel);
     					
-    					
+    					/*
     					boolean[] valid = new boolean[wave.length];
     					for(int j = 0; j < wave.length; j++) {
     						if(wave[j].amplitude * eq[j] > 0.01) valid[j] = true;
     					}
-    					/*
+    					/
     					for(int j = 0; j < max_idx.length; j++) {
     						//if(wave[max_idx[j]].amplitude * eq[max_idx[j]] > 0.005)
     						valid[max_idx[j]] = true;
     					}
-    					*/
+    					/
     					valid_list.add(valid);
+    					*/
 
 
     					/*
@@ -1062,7 +1085,7 @@ public class SoundTest2 {
             ImageIO.write(peak, "PNG", new File("output_peak.png"));//
             */
             
-            
+            /*
             BufferedImage valid_img = new BufferedImage(valid_list.size(), valid_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < valid_list.size(); i++) {
             	boolean[] valid = valid_list.get(i);
@@ -1075,6 +1098,7 @@ public class SoundTest2 {
             	}
             }
             ImageIO.write(valid_img, "PNG", new File("output_valid.png"));//
+            */
 
             /*
             BufferedImage wave_img = new BufferedImage(wave_list.size(), wave_list.get(0).length, BufferedImage.TYPE_INT_RGB);
@@ -1168,9 +1192,9 @@ public class SoundTest2 {
             //byte[] pcmBytesArray = new byte[frame_samples * mag_list.size() * 2];
             double sampleMax = 0;
             for(int i = 0; i < mag_list.size(); i++) {
+            	/*
             	Wave[] wave = wave_list.get(i);
             	boolean[] valid = valid_list.get(i);
-
             	for(int j = 0; j < frame_samples; j++) {
             		double common = 2 * Math.PI * (j + 0.) / sampleRate;
             		//for(int k = 1; k < mag.length - 1; k++) if(mag[k] > Math.max(mag[k - 1], mag[k + 1])) samplesArray[i * frame_samples + j] += Math.sin(common * freq[k] + phase[k]) * mag[k];
@@ -1184,6 +1208,22 @@ public class SoundTest2 {
             		
             		sampleMax = Math.max(sampleMax, Math.abs(samplesArray[i * frame_samples + j]));
             	}
+            	*/
+
+            	double[] mel = mag_list.get(i);
+            	for(int j = 0; j < frame_samples; j++) {
+            		double common = 2 * Math.PI * (j + 0.) / sampleRate;
+            		//for(int k = 1; k < mag.length - 1; k++) if(mag[k] > Math.max(mag[k - 1], mag[k + 1])) samplesArray[i * frame_samples + j] += Math.sin(common * freq[k] + phase[k]) * mag[k];
+            		
+            		for(int k = 1; k < mel.length - 1; k++) {
+            			if(mel[k] > Math.max(mel[k - 1], mel[k + 1])) samplesArray[i * frame_samples + j] += Math.cos(common * mel_freq[k] + 0) * mel[k] * mel_eq[k];
+            		}
+            		
+            		//for(int k = 0; k < mag.length; k++) samplesArray[i * frame_samples + j] += mag[k] * Math.cos(common * freq[k]) * Math.cos(phase[k]) - mag[k] * Math.sin(common * freq[k]) * Math.sin(phase[k]);
+            		
+            		sampleMax = Math.max(sampleMax, Math.abs(samplesArray[i * frame_samples + j]));
+            	}
+            	
             	
             	System.out.println(i);
             	
