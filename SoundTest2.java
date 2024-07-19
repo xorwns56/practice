@@ -454,7 +454,7 @@ public class SoundTest2 {
 
             double frame_sec = 0.02;
             //System.out.println(frame_sec);
-            double win_sec = frame_sec * 15;
+            double win_sec = frame_sec;
             //double win_sec = 0.02;
             int frame_len = (int)(sampleRate * frame_sec);
             double[] rect_win = new double[(int)(sampleRate * win_sec)];
@@ -489,6 +489,7 @@ public class SoundTest2 {
 			//while(n_fft < win.length || A0 * (Math.pow(2, (keyStart - 0.5 + 1. / mel_compression) / 12) - Math.pow(2, (keyStart - 0.5) / 12)) < sampleRate / n_fft) n_fft <<= 1;
 
             //n_fft *= 2 * 2;
+            n_fft = 32768;
             
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
@@ -746,7 +747,7 @@ public class SoundTest2 {
                     if(sampleOffset == sampleBuffer.length) {
 
                     	Complex[] complex = new Complex[n_fft];
-    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(hann_win[j]) : 0, 0);
+    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(rect_win[j]) : 0, 0);
     					complex = fft.transform(complex, TransformType.FORWARD);
     					
     					Wave[] wave = new Wave[n_fft / 2];
@@ -1166,6 +1167,18 @@ public class SoundTest2 {
             }
             ImageIO.write(dbfs, "PNG", new File("output_dbfs.png"));//
             
+            
+            /*
+            BufferedImage soh = new BufferedImage(sum_of_harmonic_list.size(), sum_of_harmonic_list.get(0).length, BufferedImage.TYPE_INT_RGB);
+            for(int i = 0; i < soh.getWidth(); i++) {
+            	for(int j = 0; j < soh.getHeight(); j++) {
+        			int col = sum_of_harmonic_list.get(i)[j];
+        			soh.setRGB(i, sum_of_harmonic_list.get(0).length - 1 - j, (col << 24 | col << 16 | col << 8 | col));
+        			//if(max_list.get(i) == j) soh.setRGB(i, sum_of_harmonic_list.get(0).length - 1 - j, 0xFFFF0000);
+            	}
+            }
+            ImageIO.write(soh, "PNG", new File("output_soh.png"));//
+            */
             
             /*
             int frame_samples = (int)(frame_sec * sampleRate);
