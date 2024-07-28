@@ -448,8 +448,8 @@ public class SoundTest {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
-			int sampleRateOrigin = 44100;
+			FileInputStream fis = new FileInputStream(new File("sample/drum.pcm"));
+			int sampleRateOrigin = 22050;
 			double sampleRate = sampleRateOrigin;
 
             double frame_sec = 0.02;
@@ -488,7 +488,7 @@ public class SoundTest {
 			//while(n_fft < win.length || A0 * (Math.pow(2, (keyStart - 0.5 + 1. / mel_compression) / 12) - Math.pow(2, (keyStart - 0.5) / 12)) < sampleRate / n_fft) n_fft <<= 1;
 
             //n_fft *= 2 * 2;
-            n_fft = 32768;
+            n_fft = 8192;
             
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
@@ -512,6 +512,7 @@ public class SoundTest {
             
             double bin_Hz = sampleRate / n_fft;
             
+            /*
             double a_freq = 20;
             double b_freq = 20000;
             double influence = 1.0;
@@ -558,7 +559,7 @@ public class SoundTest {
 					weight_sum += weight;
 				}
             }
-            
+            */
             
             
             double equal_loudness_max = 0;
@@ -633,7 +634,7 @@ public class SoundTest {
                     if(sampleOffset == sampleBuffer.length) {
 
                     	Complex[] complex = new Complex[n_fft];
-    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * rect_win[j] : 0, 0);
+    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(rect_win[j]) : 0, 0);
     					complex = fft.transform(complex, TransformType.FORWARD);
     					
     					//Wave[] wave = new Wave[n_fft / 2];
@@ -656,6 +657,7 @@ public class SoundTest {
     						for(int k = comp_range[j][0]; k <= comp_range[j][1]; k++) comp[j] = Math.max(comp[j], mag_eq[k]);
     					}
 
+    					/*
     					double[] mel = new double[mel_range.length];
     					for(int j = 0; j < mel.length; j++) {
     						for(int k = mel_range[j][0]; k <= mel_range[j][1]; k++) {
@@ -663,8 +665,9 @@ public class SoundTest {
     							//comp[j] = Math.max(comp[j], wave[k].amplitude);
     						}
     					}
+    					*/
     					
-
+    					/*
     					sobel.Add(frame, comp, false);
     					while(sobel.rslt_list.size() > 0) {
     						double[][] gradient = sobel.rslt_list.remove(0);
@@ -673,6 +676,7 @@ public class SoundTest {
     						}
     						gradient_list.add(gradient);
     					}
+    					*/
 
     					
     					/*
@@ -1100,7 +1104,7 @@ public class SoundTest {
             ImageIO.write(sob_img, "PNG", new File("output_sob.png"));//
             */
             
-
+            /*
             BufferedImage gradient_img = new BufferedImage(gradient_list.size(), gradient_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < gradient_list.size(); i++) {
             	double[][] grad = gradient_list.get(i);
@@ -1111,9 +1115,10 @@ public class SoundTest {
             	}
             }
             ImageIO.write(gradient_img, "PNG", new File("output_gradient.png"));//
+            */
             
             
-
+            /*
             BufferedImage soh = new BufferedImage(sum_of_harmonic_list.size(), sum_of_harmonic_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < soh.getWidth(); i++) {
             	for(int j = 0; j < soh.getHeight(); j++) {
@@ -1123,9 +1128,10 @@ public class SoundTest {
             	}
             }
             ImageIO.write(soh, "PNG", new File("output_soh.png"));//
+            */
 
 
-            /*
+ 
             BufferedImage ang = new BufferedImage(gradient_list.size(), gradient_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             BufferedImage deg = new BufferedImage(gradient_list.size(), gradient_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             
@@ -1165,7 +1171,7 @@ public class SoundTest {
             }
             ImageIO.write(ang, "PNG", new File("output_gradient_angle.png"));//
             ImageIO.write(deg, "PNG", new File("output_gradient_magnitude.png"));//
-            */
+
 
             
             
