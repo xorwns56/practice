@@ -456,7 +456,7 @@ public class SoundTest {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
+			FileInputStream fis = new FileInputStream(new File("sample/drum.pcm"));
 			int sampleRateOrigin = 22050;
 			double sampleRate = sampleRateOrigin;
 
@@ -496,7 +496,7 @@ public class SoundTest {
 			//while(n_fft < win.length || A0 * (Math.pow(2, (keyStart - 0.5 + 1. / mel_compression) / 12) - Math.pow(2, (keyStart - 0.5) / 12)) < sampleRate / n_fft) n_fft <<= 1;
 
             //n_fft *= 2 * 2;
-            n_fft = 8192;
+            //n_fft = 8192;
             
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
@@ -507,7 +507,16 @@ public class SoundTest {
             int sampleOffset = sampleBuffer.length - frame_len;
             
 
-            int mel_comp = 10;
+            int mel_comp = 20;
+            int[][] comp_range = new int[(int)Math.round(12 * Math.log(sampleRate * 0.5 / A0) / Math.log(2) * mel_comp) + 1][2];
+            for(int i = 0; i < n_fft / 2; i++) {
+            	int key = (int)Math.round(Math.max(-1, 12 * Math.log((i + 0.5) * sampleRate / n_fft / A0) / Math.log(2)) * mel_comp);
+            	System.out.println(i + " : " + key);
+            }
+
+			
+			/*
+			int mel_comp = 20;
             int[][] comp_range = new int[(int)Math.round(12 * Math.log(sampleRate * 0.5 / A0) / Math.log(2) * mel_comp) + 1][2];
             for(int i = 0; i < n_fft / 2; i++) {
             	int key1 = (int)Math.round(Math.max(-1, 12 * Math.log((i + 0.) * sampleRate / n_fft / A0) / Math.log(2)) * mel_comp);
@@ -516,7 +525,9 @@ public class SoundTest {
             		if(comp_range[j][0] == 0) comp_range[j][0] = i;
             		comp_range[j][1] = i;
             	}
+
             }
+            */
             
             double bin_Hz = sampleRate / n_fft;
             
@@ -1072,7 +1083,7 @@ public class SoundTest {
             	for(int j = 0; j < peaks.size(); j++) {
             		for(int k = peaks.get(j).start; k <= peaks.get(j).end; k++) {
             			int col = 0;
-            			int degree = (int)(peaks.get(j).value / mag_max * 0xFF);
+            			int degree = (int)(peaks.get(j).value / mag_eq_max * 0xFF);
             			
             			if(peaks.get(j).peak[0] <= k && k <= peaks.get(j).peak[1]) col = (degree << 24 | degree << 16);
             			else if(k < peaks.get(j).peak[0]) col = (degree << 24 | degree << 8);
