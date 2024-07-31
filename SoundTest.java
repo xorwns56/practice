@@ -457,7 +457,7 @@ public class SoundTest {
 		try {
 			long stamp = System.currentTimeMillis();
 			FileInputStream fis = new FileInputStream(new File("sample/drum.pcm"));
-			int sampleRateOrigin = 22050;
+			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
             double frame_sec = 0.02;
@@ -496,7 +496,7 @@ public class SoundTest {
 			//while(n_fft < win.length || A0 * (Math.pow(2, (keyStart - 0.5 + 1. / mel_compression) / 12) - Math.pow(2, (keyStart - 0.5) / 12)) < sampleRate / n_fft) n_fft <<= 1;
 
             //n_fft *= 2 * 2;
-            //n_fft = 8192;
+            //n_fft = 32768;
             
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
@@ -506,16 +506,22 @@ public class SoundTest {
             double[] sampleBuffer = new double[rect_win.length];
             int sampleOffset = sampleBuffer.length - frame_len;
             
-
+            /*
             int mel_comp = 20;
             int[][] comp_range = new int[(int)Math.round(12 * Math.log(sampleRate * 0.5 / A0) / Math.log(2) * mel_comp) + 1][2];
             for(int i = 0; i < n_fft / 2; i++) {
             	int key = (int)Math.round(Math.max(-1, 12 * Math.log((i + 0.5) * sampleRate / n_fft / A0) / Math.log(2)) * mel_comp);
-            	System.out.println(i + " : " + key);
+            	
+            	if(0 <= key) {
+            		
+            	}
+            	
+            	//System.out.println(i + " : " + key);
             }
+            */
 
 			
-			/*
+
 			int mel_comp = 20;
             int[][] comp_range = new int[(int)Math.round(12 * Math.log(sampleRate * 0.5 / A0) / Math.log(2) * mel_comp) + 1][2];
             for(int i = 0; i < n_fft / 2; i++) {
@@ -525,26 +531,30 @@ public class SoundTest {
             		if(comp_range[j][0] == 0) comp_range[j][0] = i;
             		comp_range[j][1] = i;
             	}
-
             }
-            */
+            double[] comp_freq = new double[comp_range.length];
+            for(int i = 0; i < comp_range.length; i++) {
+            	//System.out.println(i + " : " + Math.pow(A0 ))
+            	comp_freq[i] = Math.pow(2, ((double)i / mel_comp) / 12) * A0;
+            }
+
             
             double bin_Hz = sampleRate / n_fft;
             
-            /*
+
             double a_freq = 20;
             double b_freq = 20000;
-            double influence = 1.0;
-            int a = (int)Math.ceil((12 * Math.log(a_freq / A0) / Math.log(2) + influence) * mel_comp);
-            int b = (int)Math.floor((12 * Math.log(Math.min(b_freq, sampleRate * 0.5) / A0) / Math.log(2) - influence) * mel_comp);
-            int[][] mel_range = new int[b - a + 1][2];
+            int a_f = (int)Math.ceil((12 * Math.log(a_freq / A0) / Math.log(2)) * mel_comp);
+            int b_f = (int)Math.floor((12 * Math.log(Math.min(b_freq, sampleRate * 0.5) / A0) / Math.log(2)) * mel_comp);
+            int[][] mel_range = new int[b_f - a_f + 1][2];
             double[] mel_freq = new double[mel_range.length];
+            double[] mel_lerp = new double[mel_range.length];
             double[] mel_eq = new double[mel_range.length];
             double[][] mel_weight = new double[mel_range.length][];
             for(int i = 0; i < mel_range.length; i++) {
-            	mel_freq[i] = Math.pow(2, ((i + a) / (double)mel_comp / 12)) * A0;
-
-            	double center = mel_freq[i] / bin_Hz;
+            	mel_freq[i] = Math.pow(2, ((i + a_f) / (double)mel_comp / 12)) * A0;
+            	mel_lerp[i] = Math.pow(2, ((i + a_f) / (double)mel_comp / 12)) * A0 / bin_Hz;
+            	//double center = mel_freq[i] / bin_Hz;
             	
             	//double center = (int)Math.round(Math.max(-1, 12 * Math.log((i + 0.) * sampleRate / n_fft / A0) / Math.log(2)) * mel_comp);
 
@@ -554,8 +564,10 @@ public class SoundTest {
             	
             	
             	//System.out.println(center);
-            	//System.out.println(center + ", " + center / bin_Hz);
+            	System.out.println(mel_lerp[i] * bin_Hz);
             	
+            	
+            	/*
             	double left = center * Math.pow(2, -influence / 12);
             	double right = center * Math.pow(2, influence / 12);
             	
@@ -577,8 +589,8 @@ public class SoundTest {
 					
 					weight_sum += weight;
 				}
+				*/
             }
-            */
             
             
             double equal_loudness_max = 0;
@@ -618,6 +630,7 @@ public class SoundTest {
             ArrayList<Integer> max_idx_of_harmonic_list = new ArrayList<>();
             double max_sum_of_harmonic = 0;
             int overtone_count = 10;
+            double overtone_coef = 0.5;
 
             ArrayList<double[]> mel_list = new ArrayList<>();
             ArrayList<double[]> mag_eq_list = new ArrayList<>();
@@ -641,6 +654,8 @@ public class SoundTest {
             double mag_max = 0;
             double mag_eq_max = 0;
             double mag_pq_max = 0;
+            
+            double mel_max = 0;
 
             
             double gradient_max = 0;
@@ -710,14 +725,46 @@ public class SoundTest {
 						*/
     					
 
-    					
     					double[] comp = new double[comp_range.length];
+    					double[] comp2 = new double[comp_range.length];
     					for(int j = 0; j < comp.length; j++) {
-    						for(int k = comp_range[j][0]; k <= comp_range[j][1]; k++) comp[j] = Math.max(comp[j], mag_eq[k]);
+    						for(int k = comp_range[j][0]; k <= comp_range[j][1]; k++) {
+    							if(comp[j] < mag_eq[k]) {
+    								comp[j] = mag_eq[k];
+    								comp2[j] = mag[k];
+    							}
+    						}
     					}
-    					
+    					//comp = mag_eq;
+    					mag_list.add(comp2);
     					mag_eq_list.add(comp);
+
     					
+    					/*
+    					double[] mel = new double[mel_lerp.length];
+						for(int j = 0; j < mel_lerp.length; j++) {
+							int l = (int)mel_lerp[j];
+							double mu = mel_lerp[j] - l;
+							double mu2 = mu * mu;
+							
+							double y3 = l + 2 < mag.length ? mag_eq[l + 2] : 0;
+							double y2 = l + 1 < mag.length ? mag_eq[l + 1] : 0;
+							double y1 = mag_eq[l];
+							double y0 = l - 1 < 0 ? 0 : mag_eq[l - 1];
+							
+							double a0 = y3 - y2 - y0 + y1;
+							double a1 = y0 - y1 - a0;
+							double a2 = y2 - y0;
+							double a3 = y1;
+							//dbfs[j] = Math.min(1, Math.max(0, a0 * mu * mu2 + a1 * mu2 + a2 * mu + a3));
+							//dbfs[j] = Math.min(1, Math.max(0, a0 * mu * mu2 + a1 * mu2 + a2 * mu + a3));
+							mel[j] = a0 * mu * mu2 + a1 * mu2 + a2 * mu + a3;
+							
+							if(mel_max < mel[j]) mel_max = mel[j];
+						}
+						mel_list.add(mel);
+						*/
+
     					ArrayList<Peak> peaks = new ArrayList<>();
 						for(int j = 0; j < comp.length; j++) {
 							if(comp[j] > 0.00) {
@@ -744,6 +791,23 @@ public class SoundTest {
 							}
 						}
 						peaks_list.add(peaks);
+						
+						
+						double[] sum_of_harmonic = new double[comp.length];
+    					
+    					int max_idx_of_harmonic = 0;
+    					
+						for(int k = 0; k < comp.length; k++) {
+							for(int j = 0; j < overtone_count; j++) {
+		                		int l = k + (int)Math.round(12 * mel_comp * Math.log(1 + j * overtone_coef) / Math.log(2));
+		                		
+								if(l < comp.length) sum_of_harmonic[k] += comp[l]; //comp[l];
+		                    }
+							if(sum_of_harmonic[max_idx_of_harmonic] < sum_of_harmonic[k]) max_idx_of_harmonic = k;
+						}
+						if(max_sum_of_harmonic < sum_of_harmonic[max_idx_of_harmonic]) max_sum_of_harmonic = sum_of_harmonic[max_idx_of_harmonic];
+						max_idx_of_harmonic_list.add(max_idx_of_harmonic);
+						sum_of_harmonic_list.add(sum_of_harmonic);
 
     					/*
     					double[] mel = new double[mel_range.length];
@@ -755,7 +819,7 @@ public class SoundTest {
     					}
     					*/
     					
-    					/*
+						/*
     					sobel.Add(frame, comp, false);
     					while(sobel.rslt_list.size() > 0) {
     						double[][] gradient = sobel.rslt_list.remove(0);
@@ -797,24 +861,6 @@ public class SoundTest {
     					mel_list.add(mel);
     					max_list.add(max_idx);
     					
-    					
-    					double[] sum_of_harmonic = new double[mel.length];
-    					
-    					int max_idx_of_harmonic = 0;
-    					
-						for(int k = 0; k < mel.length; k++) {
-							for(int j = 0; j < overtone_count; j++) {
-		                		int l = k + (int)Math.round(12 * mel_comp * Math.log(1 + j * 1.0) / Math.log(2));
-		                		
-								if(l < mel.length) sum_of_harmonic[k] += mel[l]; //comp[l];
-		                    }
-							if(sum_of_harmonic[max_idx_of_harmonic] < sum_of_harmonic[k]) max_idx_of_harmonic = k;
-						}
-						if(max_sum_of_harmonic < sum_of_harmonic[max_idx_of_harmonic]) max_sum_of_harmonic = sum_of_harmonic[max_idx_of_harmonic];
-						
-						
-						max_idx_of_harmonic_list.add(max_idx_of_harmonic);
-						sum_of_harmonic_list.add(sum_of_harmonic);
 						*/
     					
     					/*
@@ -1076,7 +1122,6 @@ public class SoundTest {
             System.out.println(System.currentTimeMillis() - stamp);
             
 
-
             BufferedImage peak = new BufferedImage(peaks_list.size(), comp_range.length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < peaks_list.size(); i++) {
             	ArrayList<Peak> peaks = peaks_list.get(i);
@@ -1138,6 +1183,19 @@ public class SoundTest {
             ImageIO.write(dbfs, "PNG", new File("output_dbfs.png"));//
             */
 
+            /*
+            BufferedImage dbfs4 = new BufferedImage(mel_list.size(), mel_list.get(0).length, BufferedImage.TYPE_INT_RGB);
+            for(int i = 0; i < mel_list.size(); i++) {
+            	double[] mel = mel_list.get(i);
+            	
+            	for(int j = 1; j < mel.length - 1; j++) {
+            		int col = (int)(mel[j] / mel_max * 0xFF);
+            		dbfs4.setRGB(i, mel_list.get(0).length - 1 - j, (col << 24 | col << 16 | col << 8 | col));
+            		//if(mag[j] > Math.max(mag[j - 1], mag[j + 1])) dbfs.setRGB(i, mag_list.get(0).length - 1 - j, 0xFFFF0000);
+            	}
+            }
+            ImageIO.write(dbfs4, "PNG", new File("output_dbfs4.png"));//
+            */
 
             BufferedImage dbfs2 = new BufferedImage(mag_eq_list.size(), mag_eq_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < mag_eq_list.size(); i++) {
@@ -1151,7 +1209,7 @@ public class SoundTest {
             }
             ImageIO.write(dbfs2, "PNG", new File("output_dbfs2.png"));//
 
-            
+            /*
             BufferedImage dbfs3 = new BufferedImage(mag_pq_list.size(), mag_pq_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < mag_pq_list.size(); i++) {
             	double[] mag_pq = mag_pq_list.get(i);
@@ -1163,6 +1221,7 @@ public class SoundTest {
             	}
             }
             ImageIO.write(dbfs3, "PNG", new File("output_dbfs3.png"));//
+            */
             
             /*
             double[][] x_ = new double[][] {{-1, -2, -1}, {0, 0, 0}, {1, 2, 1}};
@@ -1216,7 +1275,7 @@ public class SoundTest {
             */
             
             
-            /*
+
             BufferedImage soh = new BufferedImage(sum_of_harmonic_list.size(), sum_of_harmonic_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < soh.getWidth(); i++) {
             	for(int j = 0; j < soh.getHeight(); j++) {
@@ -1226,10 +1285,8 @@ public class SoundTest {
             	}
             }
             ImageIO.write(soh, "PNG", new File("output_soh.png"));//
-            */
 
-
- 
+            /*
             BufferedImage ang = new BufferedImage(gradient_list.size(), gradient_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             BufferedImage deg = new BufferedImage(gradient_list.size(), gradient_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             
@@ -1269,6 +1326,7 @@ public class SoundTest {
             }
             ImageIO.write(ang, "PNG", new File("output_gradient_angle.png"));//
             ImageIO.write(deg, "PNG", new File("output_gradient_magnitude.png"));//
+            */
 
 
             
@@ -1302,18 +1360,18 @@ public class SoundTest {
             	double[] mag = mag_list.get(i);
             	int max_idx = max_idx_of_harmonic_list.get(i);
             	
-            	int[] max_idx2 = max_list.get(i);
+            	//int[] max_idx2 = max_list.get(i);
             	
             	
             	for(int j = 0; j < frame_samples; j++) {
             		for(int k = 0; k < angle.length; k++) {
-            			int l = max_idx + (int)Math.round(12 * mel_comp * Math.log(1 + k * 1.0) / Math.log(2));
-						if(l < max_idx2.length) {
+            			int l = max_idx + (int)Math.round(12 * mel_comp * Math.log(1 + k * overtone_coef) / Math.log(2));
+						if(l < comp_freq.length) {
 							
-							angle[k] += 2 * Math.PI * (max_idx2[l] * bin_Hz) / sampleRate;
+							//angle[k] += 2 * Math.PI * (max_idx2[l] * bin_Hz) / sampleRate;
 							
-	            			//angle[k] += 2 * Math.PI * mel_freq[l] / sampleRate;
-	                		samplesArray[i * frame_samples + j] += Math.cos(angle[k]) * (mag[max_idx2[l]]);
+	            			angle[k] += 2 * Math.PI * comp_freq[l] / sampleRate;
+	                		samplesArray[i * frame_samples + j] += Math.cos(angle[k]) * mag[l];
 						}
             		}
             		sampleMax = Math.max(sampleMax, Math.abs(samplesArray[i * frame_samples + j]));
