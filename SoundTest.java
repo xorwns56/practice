@@ -1355,6 +1355,37 @@ public class SoundTest {
             int frame_samples = (int)(frame_sec * sampleRate);
             double sampleMax = 0;
             double[] samplesArray = new double[frame_samples * mag_list.size()];
+            for(int i = 0; i < mag_list.size() - 1; i++) {
+            	double[] mag = mag_list.get(i);
+            	double[] next_mag = mag_list.get(i + 1);
+            	for(int j = 0; j < frame_samples; j++) {
+            		for(int k = 0; k < mag.length; k++) {
+            			double mag_lerp = mag[k] + (next_mag[k] - mag[k]) * ((double)j / frame_samples);
+            			
+            			
+            			
+            		}
+            		
+            		/*
+            		for(int k = 0; k < angle.length; k++) {
+            			int l = max_idx + (int)Math.round(12 * mel_comp * Math.log(1 + k * overtone_coef) / Math.log(2));
+						if(l < comp_freq.length) {
+							
+							//angle[k] += 2 * Math.PI * (max_idx2[l] * bin_Hz) / sampleRate;
+							
+	            			angle[k] += 2 * Math.PI * comp_freq[l] / sampleRate;
+	                		samplesArray[i * frame_samples + j] += Math.cos(angle[k]) * mag[l];
+						}
+            		}
+            		sampleMax = Math.max(sampleMax, Math.abs(samplesArray[i * frame_samples + j]));
+            		*/
+            	}
+            	//max_idx는 0배음으로 칠것임
+            }
+            /*
+            int frame_samples = (int)(frame_sec * sampleRate);
+            double sampleMax = 0;
+            double[] samplesArray = new double[frame_samples * mag_list.size()];
             double[] angle = new double[overtone_count];
             for(int i = 0; i < mag_list.size(); i++) {
             	double[] mag = mag_list.get(i);
@@ -1376,10 +1407,9 @@ public class SoundTest {
             		}
             		sampleMax = Math.max(sampleMax, Math.abs(samplesArray[i * frame_samples + j]));
             	}
-            	
-            	
             	//max_idx는 0배음으로 칠것임
             }
+            */
             byte[] pcmBytesArray = new byte[samplesArray.length * 2];
             for(int i = 0; i < samplesArray.length; i++) {
             	pcmBytesArray[i * 2] = (byte)((int)(samplesArray[i] / sampleMax * 32767) & 0xFF);
