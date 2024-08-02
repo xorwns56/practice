@@ -630,7 +630,7 @@ public class SoundTest {
             ArrayList<Integer> max_idx_of_harmonic_list = new ArrayList<>();
             double max_sum_of_harmonic = 0;
             int overtone_count = 10;
-            double overtone_coef = 0.5;
+            double overtone_coef = 1.0;
 
             ArrayList<double[]> mel_list = new ArrayList<>();
             ArrayList<double[]> mag_eq_list = new ArrayList<>();
@@ -687,7 +687,7 @@ public class SoundTest {
                     if(sampleOffset == sampleBuffer.length) {
 
                     	Complex[] complex = new Complex[n_fft];
-    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(rect_win[j]) : 0, 0);
+    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * rect_win[j] : 0, 0);
     					complex = fft.transform(complex, TransformType.FORWARD);
     					
     					//Wave[] wave = new Wave[n_fft / 2];
@@ -696,7 +696,15 @@ public class SoundTest {
     					
     					double[] mag = new double[n_fft / 2];
     					double[] mag_eq = new double[mag.length];
+    					
+    					double[] phase = new double[mag.length];
+    					
     					for(int j = 0; j < mag.length; j++) {
+    						
+    						phase[j] = Math.atan2(complex[j].getImaginary(), complex[j].getReal());
+    						if(phase[j] < 0) phase[j] += 2 * Math.PI;
+    						
+    						
     						mag[j] = complex[j].abs();
     						if(mag_max < mag[j]) mag_max = mag[j];
     						mag_eq[j] = mag[j] / eq[j];
@@ -705,6 +713,7 @@ public class SoundTest {
     					//mag_list.add(mag);
     					//mag_eq_list.add(mag_eq);
     					
+    					phase_list.add(phase);
     					
     					/*
     					double[] mag_pq = new double[mag.length];
@@ -1114,7 +1123,7 @@ public class SoundTest {
                         System.arraycopy(sampleBuffer, frame_len, sampleBuffer, 0, sampleOffset);
                         frame++;
                         
-                        //if(frame == 10) bb = true;
+                        if(frame == 1000) bb = true;
                     }
             	}
             	if(bb) break;
@@ -1196,6 +1205,18 @@ public class SoundTest {
             }
             ImageIO.write(dbfs4, "PNG", new File("output_dbfs4.png"));//
             */
+            
+            BufferedImage phase = new BufferedImage(phase_list.size(), phase_list.get(0).length, BufferedImage.TYPE_INT_RGB);
+            for(int i = 0; i < phase_list.size(); i++) {
+            	double[] phase_arr = phase_list.get(i);
+            	
+            	for(int j = 0; j < phase_arr.length; j++) {
+            		int col = (int)(phase_arr[j] / (2 * Math.PI) * 0xFF);
+            		phase.setRGB(i, phase_list.get(0).length - 1 - j, (col << 24 | col << 16 | col << 8 | col));
+            		//if(mag[j] > Math.max(mag[j - 1], mag[j + 1])) dbfs.setRGB(i, mag_list.get(0).length - 1 - j, 0xFFFF0000);
+            	}
+            }
+            ImageIO.write(phase, "PNG", new File("output_phase.png"));//
 
             BufferedImage dbfs2 = new BufferedImage(mag_eq_list.size(), mag_eq_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < mag_eq_list.size(); i++) {
@@ -1351,7 +1372,7 @@ public class SoundTest {
             }
             */
             
-
+            /*
             int frame_samples = (int)(frame_sec * sampleRate);
             double sampleMax = 0;
             double[] samplesArray = new double[frame_samples * mag_list.size()];
@@ -1359,57 +1380,54 @@ public class SoundTest {
             	double[] mag = mag_list.get(i);
             	double[] next_mag = mag_list.get(i + 1);
             	for(int j = 0; j < frame_samples; j++) {
+            		double common = 2 * Math.PI * (j + 0.) / sampleRate;
             		for(int k = 0; k < mag.length; k++) {
             			double mag_lerp = mag[k] + (next_mag[k] - mag[k]) * ((double)j / frame_samples);
-            			
-            			
-            			
-            		}
-            		
-            		/*
-            		for(int k = 0; k < angle.length; k++) {
-            			int l = max_idx + (int)Math.round(12 * mel_comp * Math.log(1 + k * overtone_coef) / Math.log(2));
-						if(l < comp_freq.length) {
-							
-							//angle[k] += 2 * Math.PI * (max_idx2[l] * bin_Hz) / sampleRate;
-							
-	            			angle[k] += 2 * Math.PI * comp_freq[l] / sampleRate;
-	                		samplesArray[i * frame_samples + j] += Math.cos(angle[k]) * mag[l];
-						}
+            			samplesArray[i * frame_samples + j] += Math.cos(common * comp_freq[k]) * mag_lerp;
             		}
             		sampleMax = Math.max(sampleMax, Math.abs(samplesArray[i * frame_samples + j]));
-            		*/
             	}
-            	//max_idx는 0배음으로 칠것임
+            	System.out.println(i);
             }
-            /*
+            */
+            
+ 
             int frame_samples = (int)(frame_sec * sampleRate);
             double sampleMax = 0;
             double[] samplesArray = new double[frame_samples * mag_list.size()];
             double[] angle = new double[overtone_count];
-            for(int i = 0; i < mag_list.size(); i++) {
+            for(int i = 0; i < mag_list.size() - 1; i++) {
             	double[] mag = mag_list.get(i);
             	int max_idx = max_idx_of_harmonic_list.get(i);
             	
+            	double[] mag2 = mag_list.get(i + 1);
+            	int max_idx2 = max_idx_of_harmonic_list.get(i + 1);
             	//int[] max_idx2 = max_list.get(i);
             	
             	
             	for(int j = 0; j < frame_samples; j++) {
             		for(int k = 0; k < angle.length; k++) {
             			int l = max_idx + (int)Math.round(12 * mel_comp * Math.log(1 + k * overtone_coef) / Math.log(2));
-						if(l < comp_freq.length) {
-							
-							//angle[k] += 2 * Math.PI * (max_idx2[l] * bin_Hz) / sampleRate;
-							
-	            			angle[k] += 2 * Math.PI * comp_freq[l] / sampleRate;
+            			
+            			/*
+            			if(l < comp_freq.length) {
+            				angle[k] += 2 * Math.PI * comp_freq[l] / sampleRate;
 	                		samplesArray[i * frame_samples + j] += Math.cos(angle[k]) * mag[l];
+            			}
+            			*/
+            			
+            			int l2 = max_idx2 + (int)Math.round(12 * mel_comp * Math.log(1 + k * overtone_coef) / Math.log(2));
+						if(l < comp_freq.length && l2 < comp_freq.length) {
+							//angle[k] += 2 * Math.PI * (max_idx2[l] * bin_Hz) / sampleRate;
+							angle[k] += 2 * Math.PI * (comp_freq[l] + (comp_freq[l2] - comp_freq[l]) * ((double)j / frame_samples)) / sampleRate;
+	                		samplesArray[i * frame_samples + j] += Math.cos(angle[k]) * (mag[l] + (mag2[l2] - mag[l]) * ((double)j / frame_samples));
 						}
             		}
             		sampleMax = Math.max(sampleMax, Math.abs(samplesArray[i * frame_samples + j]));
             	}
             	//max_idx는 0배음으로 칠것임
             }
-            */
+
             byte[] pcmBytesArray = new byte[samplesArray.length * 2];
             for(int i = 0; i < samplesArray.length; i++) {
             	pcmBytesArray[i * 2] = (byte)((int)(samplesArray[i] / sampleMax * 32767) & 0xFF);
