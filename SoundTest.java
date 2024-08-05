@@ -456,7 +456,7 @@ public class SoundTest {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			FileInputStream fis = new FileInputStream(new File("sample/drum.pcm"));
+			FileInputStream fis = new FileInputStream(new File("sample/sampleTest.pcm"));
 			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
@@ -748,6 +748,8 @@ public class SoundTest {
     					mag_list.add(comp2);
     					mag_eq_list.add(comp);
 
+    					
+    					comp = mag_eq;
     					
     					/*
     					double[] mel = new double[mel_lerp.length];
@@ -1138,7 +1140,7 @@ public class SoundTest {
             		for(int k = peaks.get(j).start; k <= peaks.get(j).end; k++) {
             			int col = 0;
             			int degree = (int)(peaks.get(j).value / mag_eq_max * 0xFF);
-            			
+            			degree = 0xFF;
             			if(peaks.get(j).peak[0] <= k && k <= peaks.get(j).peak[1]) col = (degree << 24 | degree << 16);
             			else if(k < peaks.get(j).peak[0]) col = (degree << 24 | degree << 8);
             			else if(k > peaks.get(j).peak[1]) col = (degree << 24 | degree);
