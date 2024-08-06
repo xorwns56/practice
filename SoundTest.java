@@ -456,7 +456,7 @@ public class SoundTest {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			FileInputStream fis = new FileInputStream(new File("sample/sampleTest.pcm"));
+			FileInputStream fis = new FileInputStream(new File("sample/sample2.pcm"));
 			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
@@ -749,8 +749,6 @@ public class SoundTest {
     					mag_eq_list.add(comp);
 
     					
-    					comp = mag_eq;
-    					
     					/*
     					double[] mel = new double[mel_lerp.length];
 						for(int j = 0; j < mel_lerp.length; j++) {
@@ -841,17 +839,27 @@ public class SoundTest {
     					}
     					*/
 
-    					
-    					/*
+
     					sobel.Add(frame, mag_eq, false);
     					while(sobel.rslt_list.size() > 0) {
     						double[][] gradient = sobel.rslt_list.remove(0);
     						for(int j = 0; j < gradient.length; j++) {
     							if(gradient_max < gradient[j][1]) gradient_max = gradient[j][1];
     						}
+    						
+    						double[] comp_gradient = new double[comp_range.length];
+        					for(int j = 0; j < comp_gradient.length; j++) {
+        						for(int k = comp_range[j][0]; k <= comp_range[j][1]; k++) {
+        							if(comp_gradient[j] < mag_eq[k]) {
+        								comp[j] = mag_eq[k];
+        								comp2[j] = mag[k];
+        							}
+        						}
+        					}
+    						
+    						
     						gradient_list.add(gradient);
     					}
-    					*/
     					
     					/*
     					double[] mel = new double[comp_range.length];
@@ -1140,7 +1148,7 @@ public class SoundTest {
             		for(int k = peaks.get(j).start; k <= peaks.get(j).end; k++) {
             			int col = 0;
             			int degree = (int)(peaks.get(j).value / mag_eq_max * 0xFF);
-            			degree = 0xFF;
+            			//degree = 0xFF;
             			if(peaks.get(j).peak[0] <= k && k <= peaks.get(j).peak[1]) col = (degree << 24 | degree << 16);
             			else if(k < peaks.get(j).peak[0]) col = (degree << 24 | degree << 8);
             			else if(k > peaks.get(j).peak[1]) col = (degree << 24 | degree);
@@ -1284,7 +1292,7 @@ public class SoundTest {
             ImageIO.write(sob_img, "PNG", new File("output_sob.png"));//
             */
             
-            /*
+
             BufferedImage gradient_img = new BufferedImage(gradient_list.size(), gradient_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < gradient_list.size(); i++) {
             	double[][] grad = gradient_list.get(i);
@@ -1295,7 +1303,6 @@ public class SoundTest {
             	}
             }
             ImageIO.write(gradient_img, "PNG", new File("output_gradient.png"));//
-            */
             
             
 
