@@ -456,7 +456,7 @@ public class SoundTest {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			FileInputStream fis = new FileInputStream(new File("sample/sample2.pcm"));
+			FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
 			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
@@ -672,6 +672,9 @@ public class SoundTest {
             List<boolean[]> valid_list = new ArrayList<>();
             
             List<List<Wave>> mel_frames = new ArrayList<>();
+            
+            List<Double> peak_sum_list = new ArrayList<>();
+            double max_peak_sum = 0;
 
             
             boolean bb = false;
@@ -774,6 +777,9 @@ public class SoundTest {
 						mel_list.add(mel);
 						*/
 
+    					
+    					double peak_sum = 0;
+    					
     					ArrayList<Peak> peaks = new ArrayList<>();
 						for(int j = 0; j < comp.length; j++) {
 							if(comp[j] > 0.00) {
@@ -792,6 +798,8 @@ public class SoundTest {
 								
 								peaks.add(new Peak(frame, start, peak, end, comp[peak[0]], 0, 0));
 								
+								peak_sum += comp[peak[0]];
+								
 								//for(int k = comp_range[peak[0]][0]; k <= comp_range[peak[1]][1]; k++) valid[k] = true;
 								
 								//if(comp[peak[0]] > 0.001)
@@ -800,6 +808,8 @@ public class SoundTest {
 							}
 						}
 						peaks_list.add(peaks);
+						peak_sum_list.add(peak_sum);
+						if(max_peak_sum < peak_sum) max_peak_sum = peak_sum;
 						
 						
 						double[] sum_of_harmonic = new double[comp.length];
@@ -843,22 +853,23 @@ public class SoundTest {
     					sobel.Add(frame, mag_eq, false);
     					while(sobel.rslt_list.size() > 0) {
     						double[][] gradient = sobel.rslt_list.remove(0);
+    						/*
     						for(int j = 0; j < gradient.length; j++) {
     							if(gradient_max < gradient[j][1]) gradient_max = gradient[j][1];
     						}
+    						*/
     						
-    						double[] comp_gradient = new double[comp_range.length];
+    						double[][] comp_gradient = new double[comp_range.length][2];
         					for(int j = 0; j < comp_gradient.length; j++) {
         						for(int k = comp_range[j][0]; k <= comp_range[j][1]; k++) {
-        							if(comp_gradient[j] < mag_eq[k]) {
-        								comp[j] = mag_eq[k];
-        								comp2[j] = mag[k];
-        							}
+        							if(comp_gradient[j][1] < gradient[k][1]) comp_gradient[j] = gradient[k];
         						}
+        						
+        						if(gradient_max < comp_gradient[j][1]) gradient_max = comp_gradient[j][1];
         					}
     						
     						
-    						gradient_list.add(gradient);
+    						gradient_list.add(comp_gradient);
     					}
     					
     					/*
