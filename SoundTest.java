@@ -462,7 +462,7 @@ public class SoundTest {
 
             double frame_sec = 0.02;
             //System.out.println(frame_sec);
-            double win_sec = frame_sec * 4;
+            double win_sec = frame_sec * 2;
             //double win_sec = 0.02;
             int frame_len = (int)(sampleRate * frame_sec);
             double[] rect_win = new double[(int)(sampleRate * win_sec)];
@@ -496,7 +496,7 @@ public class SoundTest {
 			//while(n_fft < win.length || A0 * (Math.pow(2, (keyStart - 0.5 + 1. / mel_compression) / 12) - Math.pow(2, (keyStart - 0.5) / 12)) < sampleRate / n_fft) n_fft <<= 1;
 
             //n_fft *= 2 * 2;
-            //n_fft = 32768;
+            n_fft = 32768;
             
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
@@ -604,7 +604,7 @@ public class SoundTest {
             
             PriorityQueue<IndexValuePair> pq = new PriorityQueue<>((pair1, pair2)->{ return Double.valueOf(pair2.value).compareTo(pair1.value); });
             int[][] mag_range = new int[eq.length][2];
-            double mag_radius = 0.1;
+            double mag_radius = 0.5;
             for(int j = 0; j < eq.length; j++) {
             	double fr1 = (j + 0.) * sampleRate / n_fft;
             	double fr2 = (j + 1.) * sampleRate / n_fft;
@@ -669,6 +669,7 @@ public class SoundTest {
             List<Wave[]> wave_list = new ArrayList<>();
             
             
+            
             List<boolean[]> valid_list = new ArrayList<>();
             
             List<List<Wave>> mel_frames = new ArrayList<>();
@@ -676,6 +677,9 @@ public class SoundTest {
             List<Double> peak_sum_list = new ArrayList<>();
             double max_peak_sum = 0;
 
+            
+            List<Peak> last_peaks = new ArrayList<>();
+            //System.out.println(0.31198 / Math.PI);
             
             boolean bb = false;
             
@@ -718,7 +722,7 @@ public class SoundTest {
     					
     					phase_list.add(phase);
     					
-    					/*
+
     					double[] mag_pq = new double[mag.length];
     					int[] curr_range = new int[] {0, 0};
 			            pq.add(new IndexValuePair(0, mag[0]));
@@ -734,7 +738,7 @@ public class SoundTest {
 						pq.clear();
     					
 						mag_pq_list.add(mag_pq);
-						*/
+
     					
 
     					double[] comp = new double[comp_range.length];
@@ -780,6 +784,15 @@ public class SoundTest {
     					
     					double peak_sum = 0;
     					
+    					
+    					for(int j = 0; j < mag_eq.length; j++) {
+    						//peak_sum += mag_eq[j];
+    						//peak_sum = Math.max(peak_sum, mag_eq[j]);
+    					}
+    					
+    					
+    					//comp = mag_eq;
+    					
     					ArrayList<Peak> peaks = new ArrayList<>();
 						for(int j = 0; j < comp.length; j++) {
 							if(comp[j] > 0.00) {
@@ -798,7 +811,8 @@ public class SoundTest {
 								
 								peaks.add(new Peak(frame, start, peak, end, comp[peak[0]], 0, 0));
 								
-								peak_sum += comp[peak[0]];
+								//peak_sum += comp[peak[0]];
+								peak_sum = Math.max(peak_sum, comp[peak[0]]);
 								
 								//for(int k = comp_range[peak[0]][0]; k <= comp_range[peak[1]][1]; k++) valid[k] = true;
 								
@@ -1144,14 +1158,14 @@ public class SoundTest {
                         System.arraycopy(sampleBuffer, frame_len, sampleBuffer, 0, sampleOffset);
                         frame++;
                         
-                        if(frame == 1000) bb = true;
+                        if(frame == 1500) bb = true;
                     }
             	}
             	if(bb) break;
             }
             System.out.println(System.currentTimeMillis() - stamp);
             
-
+            
             BufferedImage peak = new BufferedImage(peaks_list.size(), comp_range.length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < peaks_list.size(); i++) {
             	ArrayList<Peak> peaks = peaks_list.get(i);
@@ -1169,6 +1183,39 @@ public class SoundTest {
             	}
             }
             ImageIO.write(peak, "PNG", new File("output_peak.png"));//
+            
+            /*
+            BufferedImage peak = new BufferedImage(peaks_list.size(), mag_pq_list.get(0).length, BufferedImage.TYPE_INT_RGB);
+            for(int i = 0; i < peaks_list.size(); i++) {
+            	ArrayList<Peak> peaks = peaks_list.get(i);
+            	for(int j = 0; j < peaks.size(); j++) {
+            		for(int k = peaks.get(j).start; k <= peaks.get(j).end; k++) {
+            			int col = 0;
+            			int degree = (int)(peaks.get(j).value / mag_eq_max * 0xFF);
+            			//degree = 0xFF;
+            			if(peaks.get(j).peak[0] <= k && k <= peaks.get(j).peak[1]) col = (degree << 24 | degree << 16);
+            			else if(k < peaks.get(j).peak[0]) col = (degree << 24 | degree << 8);
+            			else if(k > peaks.get(j).peak[1]) col = (degree << 24 | degree);
+
+            			peak.setRGB(i, mag_pq_list.get(0).length - 1 - k, col);
+            		}
+            	}
+            }
+            ImageIO.write(peak, "PNG", new File("output_peak.png"));//
+            */
+            
+            BufferedImage energy = new BufferedImage(peak_sum_list.size(), 500, BufferedImage.TYPE_INT_RGB);
+            for(int i = 1; i < peak_sum_list.size() - 1; i++) {
+            	int height = (int)((energy.getHeight() - 1) * (Math.abs(peak_sum_list.get(i)) / max_peak_sum));
+            	
+            	//boolean peak = smooth_energy_list.get(i) > Math.max(smooth_energy_list.get(i - 1), smooth_energy_list.get(i + 1));
+            	
+            	for(int j = 0; j <= height; j++) {
+            		//energy.setRGB(i, (energy.getHeight() - 1) - j, peak ? 0xFFFF0000 : 0xFFFFFFFF);
+            		energy.setRGB(i, (energy.getHeight() - 1) - j, peak_sum_list.get(i) < 0 ? 0xFFFF0000 : 0xFFFFFFFF);
+            	}
+            }
+            ImageIO.write(energy, "PNG", new File("output_energy_list.png"));
             
             /*
             BufferedImage valid_img = new BufferedImage(valid_list.size(), valid_list.get(0).length, BufferedImage.TYPE_INT_RGB);
