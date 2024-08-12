@@ -456,7 +456,7 @@ public class SoundTest {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
+			FileInputStream fis = new FileInputStream(new File("sample/sampleTest.pcm"));
 			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
@@ -590,6 +590,33 @@ public class SoundTest {
 					weight_sum += weight;
 				}
 				*/
+            }
+            
+            
+            int test_start = 13;
+            int test_end = 13;
+            
+            List<Peak> test_peaks = new ArrayList<>();
+            test_peaks.add(new Peak(0, 2, new int[] { 2, 2 }, 3, 0, 0, 0));
+            test_peaks.add(new Peak(0, 4, new int[] { 5, 5 }, 6, 0, 0, 0));
+            test_peaks.add(new Peak(0, 7, new int[] { 7, 7 }, 7, 0, 0, 0));
+            test_peaks.add(new Peak(0, 8, new int[] { 9, 9 }, 10, 0, 0, 0));
+            test_peaks.add(new Peak(0, 11, new int[] { 11, 11 }, 12, 0, 0, 0));
+            int low = 0;
+            int high = test_peaks.size();
+            
+            while(low < high) {
+            	int mid = (low + high) / 2;
+            	if(test_start <= test_peaks.get(mid).end) high = mid;
+            	else low = mid + 1;
+            }
+            
+
+            while(low < test_peaks.size() && test_peaks.get(low).start <= test_end) {
+            	
+            	System.out.println(test_peaks.get(low).start + ", " + test_peaks.get(low).end);
+            	
+            	low++;
             }
             
             
@@ -809,6 +836,8 @@ public class SoundTest {
 								}
 								int end = j;
 								
+								//lastPeak에서 연결되는 부분이 있는지 찾아야한다. 일단, start와 end에 해당 되는 모든 부분을 받아와야돼. start를 기준으로해서 이진검색 후 lastpeaks에서 반복돌린다.
+								//그 후에 그 부분 들 중 소리가 비슷한 부분을 찾고(peak가 연결되면 확정시키나)?
 								peaks.add(new Peak(frame, start, peak, end, comp[peak[0]], 0, 0));
 								
 								//peak_sum += comp[peak[0]];
@@ -822,6 +851,8 @@ public class SoundTest {
 							}
 						}
 						peaks_list.add(peaks);
+						last_peaks = peaks;
+						//System.out.println(last_peaks.size());
 						peak_sum_list.add(peak_sum);
 						if(max_peak_sum < peak_sum) max_peak_sum = peak_sum;
 						
