@@ -41,6 +41,7 @@ public class SoundTest {
 		public double value;
 		public double phase;
 		public double freq;
+		public Peak next;
 		
 		public Peak(int frame, int start, int[] peak, int end, double value, double phase, double freq){
 			this.frame = frame;
@@ -50,6 +51,7 @@ public class SoundTest {
 			this.value = value;
 			this.phase = phase;
 			this.freq = freq;
+			this.next = null;
 		}
 	}
 
@@ -456,13 +458,13 @@ public class SoundTest {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			FileInputStream fis = new FileInputStream(new File("sample/sampleTest.pcm"));
+			FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
 			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
             double frame_sec = 0.02;
             //System.out.println(frame_sec);
-            double win_sec = frame_sec * 2;
+            double win_sec = frame_sec * 4;
             //double win_sec = 0.02;
             int frame_len = (int)(sampleRate * frame_sec);
             double[] rect_win = new double[(int)(sampleRate * win_sec)];
@@ -593,8 +595,9 @@ public class SoundTest {
             }
             
             
-            int test_start = 13;
-            int test_end = 13;
+            /*
+            int test_start = 12;
+            int test_end = 12;
             
             List<Peak> test_peaks = new ArrayList<>();
             test_peaks.add(new Peak(0, 2, new int[] { 2, 2 }, 3, 0, 0, 0));
@@ -618,6 +621,7 @@ public class SoundTest {
             	
             	low++;
             }
+            */
             
             
             double equal_loudness_max = 0;
@@ -704,6 +708,9 @@ public class SoundTest {
             List<Double> peak_sum_list = new ArrayList<>();
             double max_peak_sum = 0;
 
+            List<Peak[]> comp_peak_list = new ArrayList<>();
+            
+            Peak[] prev_comp_peak = new Peak[eq.length];
             
             List<Peak> last_peaks = new ArrayList<>();
             //System.out.println(0.31198 / Math.PI);
@@ -721,7 +728,7 @@ public class SoundTest {
                     if(sampleOffset == sampleBuffer.length) {
 
                     	Complex[] complex = new Complex[n_fft];
-    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * rect_win[j] : 0, 0);
+    					for(int j = 0; j < n_fft; j++) complex[j] = new Complex(j < sampleBuffer.length ? sampleBuffer[j] * Math.sqrt(rect_win[j]) : 0, 0);
     					complex = fft.transform(complex, TransformType.FORWARD);
     					
     					//Wave[] wave = new Wave[n_fft / 2];
@@ -778,7 +785,7 @@ public class SoundTest {
     							}
     						}
     					}
-    					//comp = mag_eq;
+    					comp = mag_eq;
     					mag_list.add(comp2);
     					mag_eq_list.add(comp);
 
@@ -809,52 +816,104 @@ public class SoundTest {
 						*/
 
     					
-    					double peak_sum = 0;
-    					
-    					
     					for(int j = 0; j < mag_eq.length; j++) {
     						//peak_sum += mag_eq[j];
     						//peak_sum = Math.max(peak_sum, mag_eq[j]);
     					}
     					
     					
-    					//comp = mag_eq;
-    					
-    					ArrayList<Peak> peaks = new ArrayList<>();
+    					Peak[] comp_peak = new Peak[comp.length];
 						for(int j = 0; j < comp.length; j++) {
 							if(comp[j] > 0.00) {
-								int start = j;
-								int[] peak = new int[2];
-								peak[0] = j;
+								Peak p = new Peak(0, 0, new int[2], 0, 0, 0, 0);
+								p.start = p.peak[0] = j;
+								comp_peak[j] = p;
 								while(j + 1 < comp.length && comp[j] <= comp[j + 1]) {
-									if(comp[j] < comp[j + 1]) peak[0] = j + 1;
-									j++;
+									if(comp[j] < comp[j + 1]) p.peak[0] = j + 1;
+									comp_peak[++j] = p;
 								}
-								peak[1] = j;
-								while(j + 1 < comp.length && 0.00 < comp[j + 1] && comp[j + 1] <= comp[j]) {
-									j++;
+								p.peak[1] = j;
+								while(j + 1 < comp.length && 0.00 < comp[j + 1] && comp[j + 1] <= comp[j]) comp_peak[++j] = p;
+								p.end = j;
+								p.value = comp[j];
+								//System.out.println(" ! " + p.start + ", " + p.end + " ! ");
+								
+								//양방향으로 링크가 되는지 확인
+								
+								
+								
+								/*
+								Peak tmp = null;
+								for(int k = p.start; k <= p.end; k++) {
+									if(last_comp_peak[k] == null) continue;
+									
+									
+									
+									if(tmp == null || Math.min(tmp.end, p.end) - Math.max(tmp.start, p.start) < Math.min(tmp.end, last_comp_peak[k].end) - Math.max(tmp.start, last_comp_peak[k].start)) {
+										tmp = last_comp_peak[k];
+									}
+									
+									
+									
+									k = last_comp_peak[k].end;
 								}
-								int end = j;
 								
-								//lastPeak에서 연결되는 부분이 있는지 찾아야한다. 일단, start와 end에 해당 되는 모든 부분을 받아와야돼. start를 기준으로해서 이진검색 후 lastpeaks에서 반복돌린다.
-								//그 후에 그 부분 들 중 소리가 비슷한 부분을 찾고(peak가 연결되면 확정시키나)?
-								peaks.add(new Peak(frame, start, peak, end, comp[peak[0]], 0, 0));
+								if(tmp != null) {
+									tmp.next = p;
+								}
+								*/
 								
-								//peak_sum += comp[peak[0]];
-								peak_sum = Math.max(peak_sum, comp[peak[0]]);
 								
-								//for(int k = comp_range[peak[0]][0]; k <= comp_range[peak[1]][1]; k++) valid[k] = true;
+								//System.out.println(j + ": " + p.start + ", " + p.end);
 								
-								//if(comp[peak[0]] > 0.001)
-								//for(int k = comp_range[start][0]; k <= comp_range[end][1]; k++) valid[k] = true;
-								//for(int k = max_idx[start]; k <= max_idx[end]; k++) valid[k] = true;
+								//start와 end 사이에서 이제 골라야돼. last_comp_peak에서 있는지, null체크도 해야돼.
 							}
 						}
-						peaks_list.add(peaks);
-						last_peaks = peaks;
+						
+						for(int j = 0; j < prev_comp_peak.length; j++) {
+							if(prev_comp_peak[j] == null) continue;
+							System.out.println(" ! " + prev_comp_peak[j].start + ", " + prev_comp_peak[j].end + " ! ");
+							Peak candidate = null;
+							int candidate_intersection = 0;
+							//double candidate_diff = 0;
+							for(int k = prev_comp_peak[j].start; k <= prev_comp_peak[j].end; k++) {
+								int intersection = Math.min(comp_peak[k].end, prev_comp_peak[j].end) - Math.max(comp_peak[k].start, prev_comp_peak[j].start) + 1;
+								//double diff = Math.abs(comp_peak[k].value - prev_comp_peak[j].value);
+								if(intersection > candidate_intersection) { //|| (intersection == candidate_intersection && diff > candidate_diff)) {
+									candidate = comp_peak[k];
+									candidate_intersection = intersection;
+								}
+								k = comp_peak[k].end;
+							}
+							if(candidate != null) {
+								boolean match = true;
+								for(int k = candidate.start; k <= candidate.end; k++) {
+									int intersection = Math.min(prev_comp_peak[k].end , candidate.end) - Math.max(prev_comp_peak[k].start , candidate.start) + 1;
+									if(intersection > candidate_intersection) {
+										match = false;
+										break;
+									}
+									k = candidate.end;
+								}
+								if(match) {
+									System.out.println(candidate.start + ", " + candidate.end);
+									prev_comp_peak[j].next = candidate;
+								}
+							}
+							j = prev_comp_peak[j].end;
+						}
+						
+						prev_comp_peak = comp_peak;
+						
+						//for(int j = 0; j < comp.length; j++) if(comp_peak[j] != null) System.out.println(j + " : " + comp_peak[j].start + ", " + comp_peak[j].end);
+						
+						comp_peak_list.add(comp_peak);
 						//System.out.println(last_peaks.size());
+						
+						/*
 						peak_sum_list.add(peak_sum);
 						if(max_peak_sum < peak_sum) max_peak_sum = peak_sum;
+						*/
 						
 						
 						double[] sum_of_harmonic = new double[comp.length];
@@ -1196,7 +1255,28 @@ public class SoundTest {
             }
             System.out.println(System.currentTimeMillis() - stamp);
             
+
+            BufferedImage comp_peak_img = new BufferedImage(comp_peak_list.size(), comp_peak_list.get(0).length, BufferedImage.TYPE_INT_RGB);
+            for(int i = 0; i < comp_peak_list.size(); i++) {
+            	Peak[] comp_peak = comp_peak_list.get(i);
+            	for(int j = 0; j < comp_peak.length; j++) {
+            		if(comp_peak[j] == null) continue;
+            		
+            		for(int k = comp_peak[j].start; k <= comp_peak[j].end; k++) {
+            			int col = 0;
+                		int degree = (int)(comp_peak[j].value / mag_eq_max * 0xFF);
+                		degree = 0xFF;
+                		if(comp_peak[j].peak[0] <= k && k <= comp_peak[j].peak[1]) col = (degree << 24 | degree << 16);
+            			else if(k < comp_peak[j].peak[0]) col = (degree << 24 | degree << 8);
+            			else if(k > comp_peak[j].peak[1]) col = (degree << 24 | degree);
+                		comp_peak_img.setRGB(i, comp_peak.length - 1 - k, col);
+            		}
+            		j = comp_peak[j].end;
+            	}
+            }
+            ImageIO.write(comp_peak_img, "PNG", new File("output_peak.png"));//
             
+            /*
             BufferedImage peak = new BufferedImage(peaks_list.size(), comp_range.length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < peaks_list.size(); i++) {
             	ArrayList<Peak> peaks = peaks_list.get(i);
@@ -1214,6 +1294,7 @@ public class SoundTest {
             	}
             }
             ImageIO.write(peak, "PNG", new File("output_peak.png"));//
+            */
             
             /*
             BufferedImage peak = new BufferedImage(peaks_list.size(), mag_pq_list.get(0).length, BufferedImage.TYPE_INT_RGB);
