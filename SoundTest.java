@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 
@@ -41,7 +42,9 @@ public class SoundTest {
 		public double value;
 		public double phase;
 		public double freq;
+		public Peak prev;
 		public Peak next;
+		public int col;
 		
 		public Peak(int frame, int start, int[] peak, int end, double value, double phase, double freq){
 			this.frame = frame;
@@ -458,7 +461,7 @@ public class SoundTest {
 		
 		try {
 			long stamp = System.currentTimeMillis();
-			FileInputStream fis = new FileInputStream(new File("sample/sample1.pcm"));
+			FileInputStream fis = new FileInputStream(new File("sample/sampleTest.pcm"));
 			int sampleRateOrigin = 44100;
 			double sampleRate = sampleRateOrigin;
 
@@ -498,7 +501,7 @@ public class SoundTest {
 			//while(n_fft < win.length || A0 * (Math.pow(2, (keyStart - 0.5 + 1. / mel_compression) / 12) - Math.pow(2, (keyStart - 0.5) / 12)) < sampleRate / n_fft) n_fft <<= 1;
 
             //n_fft *= 2 * 2;
-            n_fft = 32768;
+            //n_fft = 32768;
             
             System.out.println("1px : " + (sampleRate / n_fft) + "Hz");
             
@@ -634,8 +637,12 @@ public class SoundTest {
 
             
             PriorityQueue<IndexValuePair> pq = new PriorityQueue<>((pair1, pair2)->{ return Double.valueOf(pair2.value).compareTo(pair1.value); });
+            
+            
+            PriorityQueue<Peak> peakq = new PriorityQueue<>((peak1, peak2)->{ return Double.valueOf(peak2.value).compareTo(peak1.value); });
+            
             int[][] mag_range = new int[eq.length][2];
-            double mag_radius = 0.5;
+            double mag_radius = 0.75;
             for(int j = 0; j < eq.length; j++) {
             	double fr1 = (j + 0.) * sampleRate / n_fft;
             	double fr2 = (j + 1.) * sampleRate / n_fft;
@@ -825,7 +832,7 @@ public class SoundTest {
     					Peak[] comp_peak = new Peak[comp.length];
 						for(int j = 0; j < comp.length; j++) {
 							if(comp[j] > 0.00) {
-								Peak p = new Peak(0, 0, new int[2], 0, 0, 0, 0);
+								Peak p = new Peak(frame, 0, new int[2], 0, 0, 0, 0);
 								p.start = p.peak[0] = j;
 								comp_peak[j] = p;
 								while(j + 1 < comp.length && comp[j] <= comp[j + 1]) {
@@ -836,43 +843,33 @@ public class SoundTest {
 								while(j + 1 < comp.length && 0.00 < comp[j + 1] && comp[j + 1] <= comp[j]) comp_peak[++j] = p;
 								p.end = j;
 								p.value = comp[j];
-								//System.out.println(" ! " + p.start + ", " + p.end + " ! ");
 								
-								//양방향으로 링크가 되는지 확인
-								
-								
-								
-								/*
-								Peak tmp = null;
-								for(int k = p.start; k <= p.end; k++) {
-									if(last_comp_peak[k] == null) continue;
-									
-									
-									
-									if(tmp == null || Math.min(tmp.end, p.end) - Math.max(tmp.start, p.start) < Math.min(tmp.end, last_comp_peak[k].end) - Math.max(tmp.start, last_comp_peak[k].start)) {
-										tmp = last_comp_peak[k];
-									}
-									
-									
-									
-									k = last_comp_peak[k].end;
-								}
-								
-								if(tmp != null) {
-									tmp.next = p;
-								}
-								*/
-								
-								
-								//System.out.println(j + ": " + p.start + ", " + p.end);
-								
-								//start와 end 사이에서 이제 골라야돼. last_comp_peak에서 있는지, null체크도 해야돼.
+								peakq.add(p);
 							}
 						}
 						
+						while(peakq.size() > 0) {
+							Peak peak = peakq.remove();
+							Peak candidate = null;
+							//System.out.println(" ! " + peak.start + ", " + peak.end + " ! ");
+							for(int j = peak.start; j <= peak.end; j++) {
+								if(prev_comp_peak[j] == null) continue;
+								if(prev_comp_peak[j].next == null) {
+									if(candidate == null || candidate.value < prev_comp_peak[j].value) candidate = prev_comp_peak[j];
+								}
+								j = prev_comp_peak[j].end;
+							}
+							if(candidate != null) candidate.next = peak;
+						}
+
+						//System.out.println(peakq.size());
+						//Peak를 value순 내림차순 정렬 후 높은 값을 가지는 값부터 우선적으로 옆에서 비슷한 값을 가져옴
+						
+						
+						/*
 						for(int j = 0; j < prev_comp_peak.length; j++) {
 							if(prev_comp_peak[j] == null) continue;
-							System.out.println(" ! " + prev_comp_peak[j].start + ", " + prev_comp_peak[j].end + " ! ");
+							//System.out.println(" ! " + prev_comp_peak[j].start + ", " + prev_comp_peak[j].end + " ! ");
 							Peak candidate = null;
 							int candidate_intersection = 0;
 							//double candidate_diff = 0;
@@ -896,12 +893,13 @@ public class SoundTest {
 									k = candidate.end;
 								}
 								if(match) {
-									System.out.println(candidate.start + ", " + candidate.end);
+									//System.out.println(candidate.start + ", " + candidate.end);
 									prev_comp_peak[j].next = candidate;
 								}
 							}
 							j = prev_comp_peak[j].end;
 						}
+						*/
 						
 						prev_comp_peak = comp_peak;
 						
@@ -1255,13 +1253,52 @@ public class SoundTest {
             }
             System.out.println(System.currentTimeMillis() - stamp);
             
-
+            int[] color = new int[] { 0xff00f0ff, 0xfff4d7d7, 0xff2a0f3f, 0xfff3ff00, 0xffa3a8b5, 0xfff70084, 0xff1f3f72, 0xff33ccff, 0xff000033, 0xffecd5fd, 0xffff8000, 0xff6e1ed0, 0xffe46bf4, 0xffecff7f, 0xffccffcc, 0xff6600ff, 0xfff3e84d, 0xff00f0ff, 0xffd4ff25, 0xffb2b3ae, 0xff79097e, 0xff6666ff, 0xffff33cc, 0xffffd6f5, 0xffebff00, 0xffff0099, 0xffff9900, 0xffff6633, 0xff003d18, 0xffd7ff00, 0xff13017c, 0xfff0006b, 0xffaedef2, 0xffa0db8e, 0xfffff68f, 0xffff7373, 0xffc6e2ff, 0xffff033e, 0xff8a2be2, 0xffdd8470, 0xffeda698, 0xff813300 };
+            
             BufferedImage comp_peak_img = new BufferedImage(comp_peak_list.size(), comp_peak_list.get(0).length, BufferedImage.TYPE_INT_RGB);
             for(int i = 0; i < comp_peak_list.size(); i++) {
             	Peak[] comp_peak = comp_peak_list.get(i);
             	for(int j = 0; j < comp_peak.length; j++) {
             		if(comp_peak[j] == null) continue;
             		
+            		/*
+            		if(j == 0) {
+            			int col = color[new Random().nextInt(color.length)];
+            			comp_peak[j].col = col;
+            		}
+            		if(comp_peak[j].next != null) comp_peak[j].next.col = comp_peak[j].col;
+            		for(int k = comp_peak[j].start; k <= comp_peak[j].end; k++) {
+        				comp_peak_img.setRGB(i, comp_peak.length - 1 - k, comp_peak[j].col);
+        			}
+        			*/
+
+
+ 
+            		for(int k = comp_peak[j].start; k <= comp_peak[j].end; k++) {
+            			if(comp_peak[j].col == 0) {
+            				int col = color[new Random().nextInt(color.length)];
+            				comp_peak[j].col = col;
+            			}
+            			if(comp_peak[j].next != null) comp_peak[j].next.col = comp_peak[j].col;
+
+                		comp_peak_img.setRGB(i, comp_peak.length - 1 - k, comp_peak[j].col);
+            		}
+
+            		
+            		
+            		/*
+            		for(int k = comp_peak[j].start; k <= comp_peak[j].end; k++) {
+            			if(comp_peak[j].col == 0) {
+            				int col = color[new Random().nextInt(color.length)];
+            				comp_peak[j].col = col;
+            			}
+            			if(comp_peak[j].next != null) comp_peak[j].next.col = comp_peak[j].col;
+
+                		comp_peak_img.setRGB(i, comp_peak.length - 1 - k, comp_peak[j].col);
+            		}
+            		*/
+            		
+            		/*
             		for(int k = comp_peak[j].start; k <= comp_peak[j].end; k++) {
             			int col = 0;
                 		int degree = (int)(comp_peak[j].value / mag_eq_max * 0xFF);
@@ -1271,9 +1308,21 @@ public class SoundTest {
             			else if(k > comp_peak[j].peak[1]) col = (degree << 24 | degree);
                 		comp_peak_img.setRGB(i, comp_peak.length - 1 - k, col);
             		}
+            		*/
+            		
+            		
             		j = comp_peak[j].end;
             	}
             }
+            /*
+            Peak[] p = comp_peak_list.get(0);
+            Peak tmp = p[2];
+            while(tmp != null) {
+            	System.out.println(tmp.frame);
+            	tmp = tmp.next;
+            }
+            */
+            
             ImageIO.write(comp_peak_img, "PNG", new File("output_peak.png"));//
             
             /*
@@ -1315,6 +1364,18 @@ public class SoundTest {
             }
             ImageIO.write(peak, "PNG", new File("output_peak.png"));//
             */
+            
+            BufferedImage dbfs3 = new BufferedImage(mag_pq_list.size(), mag_pq_list.get(0).length, BufferedImage.TYPE_INT_RGB);
+            for(int i = 0; i < mag_pq_list.size(); i++) {
+            	double[] mag_pq = mag_pq_list.get(i);
+            	
+            	for(int j = 1; j < mag_pq.length - 1; j++) {
+            		int col = (int)(mag_pq[j] / mag_pq_max * 0xFF);
+            		dbfs3.setRGB(i, mag_pq_list.get(0).length - 1 - j, (col << 24 | col << 16 | col << 8 | col));
+            		//if(mag[j] > Math.max(mag[j - 1], mag[j + 1])) dbfs.setRGB(i, mag_list.get(0).length - 1 - j, 0xFFFF0000);
+            	}
+            }
+            ImageIO.write(dbfs3, "PNG", new File("output_dbfs3.png"));//
             
             BufferedImage energy = new BufferedImage(peak_sum_list.size(), 500, BufferedImage.TYPE_INT_RGB);
             for(int i = 1; i < peak_sum_list.size() - 1; i++) {
@@ -1410,19 +1471,7 @@ public class SoundTest {
             }
             ImageIO.write(dbfs2, "PNG", new File("output_dbfs2.png"));//
 
-            /*
-            BufferedImage dbfs3 = new BufferedImage(mag_pq_list.size(), mag_pq_list.get(0).length, BufferedImage.TYPE_INT_RGB);
-            for(int i = 0; i < mag_pq_list.size(); i++) {
-            	double[] mag_pq = mag_pq_list.get(i);
-            	
-            	for(int j = 1; j < mag_pq.length - 1; j++) {
-            		int col = (int)(mag_pq[j] / mag_pq_max * 0xFF);
-            		dbfs3.setRGB(i, mag_pq_list.get(0).length - 1 - j, (col << 24 | col << 16 | col << 8 | col));
-            		//if(mag[j] > Math.max(mag[j - 1], mag[j + 1])) dbfs.setRGB(i, mag_list.get(0).length - 1 - j, 0xFFFF0000);
-            	}
-            }
-            ImageIO.write(dbfs3, "PNG", new File("output_dbfs3.png"));//
-            */
+
             
             /*
             double[][] x_ = new double[][] {{-1, -2, -1}, {0, 0, 0}, {1, 2, 1}};
